@@ -27,7 +27,8 @@ class CuentaSistemaResource extends JsonResource
                 match($this->persona->tipo) {
                     'admin' => ['Administrador'],
                     'instructor' => ['Instructor'],
-                    'staff', 'secretaria' => ['Staff'],
+                    'staff' => ['Staff'],
+                    'secretaria' => ['Secretaria'],
                     default => []
                 }
             )),

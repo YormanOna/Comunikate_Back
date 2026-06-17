@@ -99,7 +99,7 @@ class CatalogoCursoController extends Controller
      */
     public function disponibles(Request $request)
     {
-        $query = CursoAbierto::with('catalogo:id,nombre,descripcion,categoria')
+        $query = CursoAbierto::with('catalogo:id,nombre,descripcion,categoria,color')
             ->where('estado', '!=', 'cancelado');
 
         // Filtrar por cursos que aún no se han iniciado o están en progreso

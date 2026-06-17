@@ -222,8 +222,8 @@ class StaffRegistrationController extends Controller
             'solicitante' => [
                 'tipo' => $solicitud->esEstudiante() ? 'estudiante' : 'externo',
                 'datos' => $solicitud->esEstudiante()
-                    ? $solicitud->estudiante?->only(['id', 'nombres', 'apellidos', 'cedula', 'correo', 'celular'])
-                    : $solicitud->participanteExterno?->only(['id', 'nombres', 'apellidos', 'correo', 'celular', 'cedula']),
+                    ? $solicitud->estudiante?->load('perfilEstudiante')?->toArray()
+                    : $solicitud->participanteExterno?->toArray(),
             ],
             'curso' => $solicitud->cursoAbierto ? [
                 'id' => $solicitud->cursoAbierto->id,
@@ -297,12 +297,16 @@ class StaffRegistrationController extends Controller
         $solicitud = SolicitudInscripcion::findOrFail($id);
 
         // Validar datos
-        $validated = $request->validate([
+        $validated =         $validated = $request->validate([
             'nombres' => 'nullable|string|max:255',
             'apellidos' => 'nullable|string|max:255',
             'correo' => 'nullable|email|max:255',
             'celular' => 'nullable|string|max:20',
             'cedula' => 'nullable|string|max:20',
+            'ocupacion' => 'nullable|string|max:100',
+            'direccion' => 'nullable|string|max:1000',
+            'estado_civil' => 'nullable|string|max:20',
+            'edad' => 'nullable|integer|min:0|max:150',
         ]);
 
         try {
@@ -319,6 +323,18 @@ class StaffRegistrationController extends Controller
                 if (!empty($dataUpdate)) {
                     $solicitud->estudiante->update($dataUpdate);
                 }
+
+                // Actualizar perfil_estudiante si aplica
+                $perfilUpdate = array_filter([
+                    'ocupacion' => $validated['ocupacion'] ?? null,
+                    'direccion' => $validated['direccion'] ?? null,
+                    'estado_civil' => $validated['estado_civil'] ?? null,
+                    'edad' => $validated['edad'] ?? null,
+                ], fn($v) => $v !== null);
+
+                if (!empty($perfilUpdate) && $solicitud->estudiante->perfilEstudiante) {
+                    $solicitud->estudiante->perfilEstudiante->update($perfilUpdate);
+                }
             } elseif ($solicitud->participanteExterno) {
                 // Actualizar ClienteExterno
                 $dataUpdate = array_filter([
@@ -327,6 +343,10 @@ class StaffRegistrationController extends Controller
                     'correo' => $validated['correo'] ?? null,
                     'celular' => $validated['celular'] ?? null,
                     'cedula' => $validated['cedula'] ?? null,
+                    'ocupacion' => $validated['ocupacion'] ?? null,
+                    'direccion' => $validated['direccion'] ?? null,
+                    'estado_civil' => $validated['estado_civil'] ?? null,
+                    'edad' => $validated['edad'] ?? null,
                 ], fn($v) => $v !== null);
 
                 if (!empty($dataUpdate)) {

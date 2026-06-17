@@ -27,6 +27,7 @@ class CatalogoCurso extends Model
         'es_activo',
         'categoria',
         'imagen',
+        'color',
     ];
 
     protected $casts = [

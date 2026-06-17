@@ -40,8 +40,9 @@ class CursoAbiertoController extends Controller
             $query->activos();
         }
 
-        if ($request->has('buscar')) {
-            $query->buscar($request->buscar);
+        $search = $request->get('buscar') ?? $request->get('search');
+        if ($search) {
+            $query->buscar($search);
         }
 
         $perPage = $request->get('per_page', 15);

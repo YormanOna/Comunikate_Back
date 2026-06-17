@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\ModuloController;
 use App\Http\Controllers\Api\V1\MatriculaController;
 use App\Http\Controllers\Api\V1\NotaController;
 use App\Http\Controllers\Api\V1\CambioHorarioController;
+use App\Http\Controllers\Api\V1\CourseTransferController;
 use App\Http\Controllers\Api\V1\TrasladoModuloController;
 use App\Http\Controllers\Api\V1\BulkOperationsController;
 use App\Http\Controllers\Api\V1\ExportController;
@@ -42,6 +43,9 @@ use App\Http\Controllers\Api\V1\ReservaPodcastController;
 use App\Http\Controllers\Api\V1\TrabajoEdicionController;
 use App\Http\Controllers\Api\V1\InstructorPortalController;
 use App\Http\Controllers\Api\V1\FinanceController;
+use App\Http\Controllers\Api\V1\SecretariaDashboardController;
+use App\Http\Controllers\Api\V1\SecretariaFinanceController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -356,6 +360,8 @@ Route::prefix('v1')->group(function () {
             Route::get('{id}/notas', [MatriculaController::class, 'notas'])->name('matriculas.notas');
             Route::get('{id}/calificaciones', [MatriculaController::class, 'calificaciones'])->name('matriculas.calificaciones');
             Route::get('{id}/cambios-horario', [MatriculaController::class, 'cambiosHorario'])->name('matriculas.cambios-horario');
+            Route::get('{id}/alternativos', [CourseTransferController::class, 'alternativos'])->name('matriculas.alternativos');
+            Route::post('{id}/transferir', [CourseTransferController::class, 'transferir'])->name('matriculas.transferir');
         });
 
         // NOTAS
@@ -529,10 +535,20 @@ Route::prefix('reports')->group(function () {
         Route::get('mis-cursos', [InstructorPortalController::class, 'misCursos'])->name('instructor.mis-cursos');
         Route::get('cursos/{id}', [InstructorPortalController::class, 'detalleCurso'])->name('instructor.detalle-curso');
         Route::get('cursos/{id}/estudiantes', [InstructorPortalController::class, 'estudiantesCurso'])->name('instructor.estudiantes-curso');
+        Route::get('estudiantes/{id}', [InstructorPortalController::class, 'detalleEstudiante'])->name('instructor.detalle-estudiante');
         Route::get('modulos/{moduloId}/clases', [InstructorPortalController::class, 'clasesModulo'])->name('instructor.clases-modulo');
         Route::get('clases/{claseId}', [InstructorPortalController::class, 'detalleClase'])->name('instructor.detalle-clase');
         Route::post('clases/{claseId}/asistencia', [InstructorPortalController::class, 'registrarAsistencia'])->name('instructor.registrar-asistencia');
         Route::post('notas', [InstructorPortalController::class, 'registrarNotas'])->name('instructor.registrar-notas');
+    });
+
+    // ========================================================================
+    // NOTIFICACIONES (compartido entre roles)
+    // ========================================================================
+    Route::middleware('auth:sanctum')->prefix('academic')->group(function () {
+        Route::prefix('notificaciones')->group(function () {
+            Route::get('/', [NotificationController::class, 'index'])->name('notificaciones.index');
+        });
     });
 
     // ========================================================================
@@ -545,5 +561,130 @@ Route::prefix('reports')->group(function () {
         Route::post('pagos', [FinanceController::class, 'registrarPago'])->name('finance.registrar-pago');
         Route::get('transacciones', [FinanceController::class, 'getTransacciones'])->name('finance.transacciones');
         Route::post('transacciones/{id}/verificar', [FinanceController::class, 'verificarTransaccion'])->name('finance.verificar-transaccion');
+    });
+
+    // ========================================================================
+    // SECRETARIA MODULE (ROL SECRETARIA)
+    // ========================================================================
+    Route::middleware(['auth:sanctum', 'role:Secretaria'])->prefix('secretaria')->group(function () {
+
+        Route::get('dashboard', [SecretariaDashboardController::class, 'index'])
+            ->name('secretaria.dashboard');
+
+        // Estudiantes
+        Route::prefix('estudiantes')->group(function () {
+            Route::get('/', [EstudianteController::class, 'index'])->name('secretaria.estudiantes.index');
+            Route::post('/', [EstudianteController::class, 'store'])->name('secretaria.estudiantes.store');
+            Route::get('{estudiante}', [EstudianteController::class, 'show'])->name('secretaria.estudiantes.show');
+            Route::put('{estudiante}', [EstudianteController::class, 'update'])->name('secretaria.estudiantes.update');
+            Route::get('{estudiante}/academic-profile', [EstudianteController::class, 'academicProfile'])->name('secretaria.estudiantes.academic-profile');
+        });
+
+        // Finanzas (solo cobranza, sin resumen global)
+        Route::prefix('finanzas')->group(function () {
+            Route::get('cuentas', [SecretariaFinanceController::class, 'cuentas'])->name('secretaria.finanzas.cuentas');
+            Route::get('cuentas/{id}', [SecretariaFinanceController::class, 'cuentaDetalle'])->name('secretaria.finanzas.cuenta-detalle');
+            Route::post('pagos', [SecretariaFinanceController::class, 'registrarPago'])->name('secretaria.finanzas.registrar-pago');
+            Route::post('transacciones/{id}/verificar', [SecretariaFinanceController::class, 'verificarTransaccion'])->name('secretaria.finanzas.verificar-transaccion');
+        });
+
+        // Matriculas
+        Route::prefix('matriculas')->group(function () {
+            Route::get('/', [MatriculaController::class, 'index'])->name('secretaria.matriculas.index');
+            Route::post('/', [MatriculaController::class, 'store'])->name('secretaria.matriculas.store');
+            Route::get('{id}', [MatriculaController::class, 'show'])->name('secretaria.matriculas.show');
+        });
+
+        // Cursos (solo lectura operativa)
+        Route::prefix('cursos')->group(function () {
+            Route::get('/', [CursoAbiertoController::class, 'index'])->name('secretaria.cursos.index');
+            Route::get('{id}', [CursoAbiertoController::class, 'show'])->name('secretaria.cursos.show');
+            Route::get('{id}/horarios', [CursoAbiertoController::class, 'horarios'])->name('secretaria.cursos.horarios');
+            Route::get('{id}/matriculas', [CursoAbiertoController::class, 'matriculas'])->name('secretaria.cursos.matriculas');
+            Route::get('{id}/modulos', [CursoAbiertoController::class, 'modulos'])->name('secretaria.cursos.modulos');
+        });
+
+        // Talleres
+        Route::prefix('talleres')->group(function () {
+            Route::get('/', [TallerController::class, 'index'])->name('secretaria.talleres.index');
+            Route::get('{id}', [TallerController::class, 'show'])->name('secretaria.talleres.show');
+            Route::get('{id}/horarios', [HorarioTallerController::class, 'index'])->name('secretaria.talleres.horarios');
+        });
+
+        Route::prefix('talleres/{taller_id}/inscripciones')->group(function () {
+            Route::get('estudiantes', [InscripcionTallerController::class, 'indexEstudiantes'])->name('secretaria.inscripciones-talleres.estudiantes');
+            Route::post('estudiantes', [InscripcionTallerController::class, 'storeEstudiante'])->name('secretaria.inscripciones-talleres.estudiantes.store');
+            Route::get('externos', [InscripcionTallerController::class, 'indexExternos'])->name('secretaria.inscripciones-talleres.externos');
+            Route::post('externos', [InscripcionTallerController::class, 'storeExterno'])->name('secretaria.inscripciones-talleres.externos.store');
+        });
+
+        Route::prefix('inscripciones-talleres')->group(function () {
+            Route::put('estudiantes/{id}', [InscripcionTallerController::class, 'updateEstadoEstudiante'])->name('secretaria.inscripciones-talleres.estudiantes.update');
+            Route::delete('estudiantes/{id}', [InscripcionTallerController::class, 'destroyEstudiante'])->name('secretaria.inscripciones-talleres.estudiantes.destroy');
+            Route::put('externos/{id}', [InscripcionTallerController::class, 'updateEstadoExterno'])->name('secretaria.inscripciones-talleres.externos.update');
+            Route::delete('externos/{id}', [InscripcionTallerController::class, 'destroyExterno'])->name('secretaria.inscripciones-talleres.externos.destroy');
+        });
+
+        // Servicios - Podcast
+        Route::prefix('servicios/podcast')->group(function () {
+            Route::get('paquetes', [PaquetePodcastController::class, 'index'])->name('secretaria.paquetes-podcast.index');
+            Route::get('reservas', [ReservaPodcastController::class, 'index'])->name('secretaria.reservas-podcast.index');
+            Route::post('reservas', [ReservaPodcastController::class, 'store'])->name('secretaria.reservas-podcast.store');
+            Route::get('reservas/{id}', [ReservaPodcastController::class, 'show'])->name('secretaria.reservas-podcast.show');
+            Route::post('reservas/{id}/pago', [ReservaPodcastController::class, 'registrarPago'])->name('secretaria.reservas-podcast.pago');
+        });
+
+        // Servicios - Edicion de Video
+        Route::prefix('servicios/edicion-video')->group(function () {
+            Route::get('/', [TrabajoEdicionController::class, 'index'])->name('secretaria.trabajos-edicion.index');
+            Route::post('/', [TrabajoEdicionController::class, 'store'])->name('secretaria.trabajos-edicion.store');
+            Route::get('{id}', [TrabajoEdicionController::class, 'show'])->name('secretaria.trabajos-edicion.show');
+            Route::put('{id}', [TrabajoEdicionController::class, 'update'])->name('secretaria.trabajos-edicion.update');
+            Route::post('{id}/entregar', [TrabajoEdicionController::class, 'registrarEntrega'])->name('secretaria.trabajos-edicion.entregar');
+            Route::post('{id}/cobro', [TrabajoEdicionController::class, 'registrarCobro'])->name('secretaria.trabajos-edicion.cobro');
+        });
+
+        // Servicios - Equipos y Alquileres
+        Route::prefix('servicios/equipos')->group(function () {
+            Route::get('/', [EquipoController::class, 'index'])->name('secretaria.equipos.index');
+            Route::get('alquileres', [AlquilerEquipoController::class, 'index'])->name('secretaria.alquileres-equipos.index');
+            Route::post('alquileres', [AlquilerEquipoController::class, 'store'])->name('secretaria.alquileres-equipos.store');
+            Route::get('alquileres/{id}', [AlquilerEquipoController::class, 'show'])->name('secretaria.alquileres-equipos.show');
+            Route::post('alquileres/{id}/entregar', [AlquilerEquipoController::class, 'entregar'])->name('secretaria.alquileres-equipos.entregar');
+            Route::post('alquileres/{id}/devolver', [AlquilerEquipoController::class, 'devolver'])->name('secretaria.alquileres-equipos.devolver');
+        });
+
+        // Certificados
+        Route::prefix('certificados')->group(function () {
+            Route::get('/', [CertificadoController::class, 'index'])->name('secretaria.certificados.index');
+            Route::post('/', [CertificadoController::class, 'store'])->name('secretaria.certificados.store');
+            Route::post('bulk', [CertificadoController::class, 'bulkStore'])->name('secretaria.certificados.bulk-store');
+            Route::get('{id}', [CertificadoController::class, 'show'])->name('secretaria.certificados.show');
+            Route::patch('{id}/entregar', [CertificadoController::class, 'marcarEntregado'])->name('secretaria.certificados.marcar-entregado');
+            Route::delete('{id}', [CertificadoController::class, 'destroy'])->name('secretaria.certificados.destroy');
+        });
+
+        // Solicitudes de inscripción
+        Route::prefix('solicitudes-inscripcion')->group(function () {
+            Route::get('/', [StaffRegistrationController::class, 'index'])->name('secretaria.solicitudes-inscripcion.index');
+            Route::get('{id}', [StaffRegistrationController::class, 'show'])->name('secretaria.solicitudes-inscripcion.show');
+            Route::post('{id}/validar', [StaffRegistrationController::class, 'approve'])->name('secretaria.solicitudes-inscripcion.approve');
+            Route::post('{id}/rechazar', [StaffRegistrationController::class, 'reject'])->name('secretaria.solicitudes-inscripcion.reject');
+            Route::post('{id}/cancelar', [StaffRegistrationController::class, 'cancel'])->name('secretaria.solicitudes-inscripcion.cancel');
+            Route::patch('{id}/actualizar-pago', [StaffRegistrationController::class, 'updatePago'])->name('secretaria.solicitudes-inscripcion.update-pago');
+        });
+
+        // Asistencia staff
+        Route::prefix('asistencia')->group(function () {
+            Route::get('/', [AsistenciaStaffController::class, 'index'])->name('secretaria.asistencia.index');
+            Route::post('/', [AsistenciaStaffController::class, 'store'])->name('secretaria.asistencia.store');
+        });
+
+        // Clientes externos
+        Route::prefix('clientes-externos')->group(function () {
+            Route::get('/', [ClienteExternoController::class, 'index'])->name('secretaria.clientes-externos.index');
+            Route::post('/', [ClienteExternoController::class, 'store'])->name('secretaria.clientes-externos.store');
+            Route::post('buscar-cedula', [ClienteExternoController::class, 'buscarCedula'])->name('secretaria.clientes-externos.buscar-cedula');
+        });
     });
 });

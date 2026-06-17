@@ -23,6 +23,10 @@ class EstudianteStoreRequest extends FormRequest
             'ciudad_id' => ['nullable', 'exists:ciudades,id'],
             'fecha_nacimiento' => ['nullable', 'date', 'before:today'],
             'notas_internas' => ['nullable', 'string'],
+            'ocupacion' => ['nullable', 'string', 'max:100'],
+            'direccion' => ['nullable', 'string', 'max:1000'],
+            'estado_civil' => ['nullable', 'string', 'max:20'],
+            'edad' => ['nullable', 'integer', 'min:0', 'max:150'],
         ];
     }
 

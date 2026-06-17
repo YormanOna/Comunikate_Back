@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
 
 class CertificadoController extends Controller
@@ -496,7 +497,7 @@ class CertificadoController extends Controller
         return response()->json(['data' => $certificado]);
     }
 
-    public function descargarPdf(string $id): Response|JsonResponse
+    public function descargarPdf(string $id): Response|JsonResponse|StreamedResponse
     {
         $certificado = Certificado::findOrFail($id);
 

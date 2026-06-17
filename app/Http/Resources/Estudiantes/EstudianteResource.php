@@ -37,6 +37,10 @@ class EstudianteResource extends JsonResource
                     'primera_matricula' => $this->perfilEstudiante->primera_matricula?->format('Y-m-d'),
                     'ultima_matricula' => $this->perfilEstudiante->ultima_matricula?->format('Y-m-d'),
                     'total_cursos' => $this->perfilEstudiante->total_cursos,
+                    'ocupacion' => $this->perfilEstudiante->ocupacion,
+                    'direccion' => $this->perfilEstudiante->direccion,
+                    'estado_civil' => $this->perfilEstudiante->estado_civil,
+                    'edad' => $this->perfilEstudiante->edad,
                 ];
             }),
             'creado_en' => $this->created_at->toIso8601String(),

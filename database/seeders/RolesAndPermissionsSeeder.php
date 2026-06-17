@@ -18,6 +18,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $adminRole = Role::firstOrCreate(['name' => 'Administrador']);
         $instructorRole = Role::firstOrCreate(['name' => 'Instructor']);
         $staffRole = Role::firstOrCreate(['name' => 'Staff']);
+        $secretariaRole = Role::firstOrCreate(['name' => 'Secretaria']);
 
         // Define permissions
         $permissions = [
@@ -27,6 +28,26 @@ class RolesAndPermissionsSeeder extends Seeder
             'gestionar_asistencia',
             'gestionar_notas',
             'ver_reportes_academicos',
+            // Permisos de secretaria
+            'ver_dashboard_secretaria',
+            'ver_cuentas_cobrar',
+            'registrar_pagos',
+            'verificar_transacciones',
+            'ver_cursos',
+            'gestionar_matriculas',
+            'ver_talleres',
+            'gestionar_inscripciones_talleres',
+            'ver_podcast',
+            'gestionar_podcast',
+            'ver_edicion_video',
+            'gestionar_edicion_video',
+            'registrar_asistencia',
+            'gestionar_certificados',
+            'entregar_certificados',
+            'ver_equipos',
+            'gestionar_alquileres',
+            'gestionar_solicitudes_inscripcion',
+            'ver_clientes_externos',
         ];
 
         foreach ($permissions as $permission) {
@@ -47,6 +68,30 @@ class RolesAndPermissionsSeeder extends Seeder
             'ver_reportes_academicos',
         ]);
 
+        $secretariaRole->givePermissionTo([
+            'ver_dashboard_secretaria',
+            'ver_estudiantes',
+            'gestionar_estudiantes',
+            'ver_cuentas_cobrar',
+            'registrar_pagos',
+            'verificar_transacciones',
+            'ver_cursos',
+            'gestionar_matriculas',
+            'ver_talleres',
+            'gestionar_inscripciones_talleres',
+            'ver_podcast',
+            'gestionar_podcast',
+            'ver_edicion_video',
+            'gestionar_edicion_video',
+            'registrar_asistencia',
+            'gestionar_certificados',
+            'entregar_certificados',
+            'ver_equipos',
+            'gestionar_alquileres',
+            'gestionar_solicitudes_inscripcion',
+            'ver_clientes_externos',
+        ]);
+
         // AUTO-ASIGNAR ROLES A CUENTAS EXISTENTES BASADO EN EL TIPO DE PERSONA
         // Protegido con hasRole para ser idempotente
         $cuentas = CuentaSistema::with('persona')->get();
@@ -62,8 +107,10 @@ class RolesAndPermissionsSeeder extends Seeder
                     if (!$cuenta->hasRole($instructorRole)) $cuenta->assignRole($instructorRole);
                     break;
                 case 'staff':
-                case 'secretaria':
                     if (!$cuenta->hasRole($staffRole)) $cuenta->assignRole($staffRole);
+                    break;
+                case 'secretaria':
+                    if (!$cuenta->hasRole($secretariaRole)) $cuenta->assignRole($secretariaRole);
                     break;
             }
         }

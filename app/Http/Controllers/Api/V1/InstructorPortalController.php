@@ -9,6 +9,7 @@ use App\Models\Matricula;
 use App\Models\Asistencia;
 use App\Models\Nota;
 use App\Models\Modulo;
+use App\Models\Persona;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -81,6 +82,39 @@ class InstructorPortalController extends Controller
 
         return response()->json([
             'datos' => $matriculas
+        ]);
+    }
+
+    /**
+     * Datos personales de un estudiante (solo si está en un curso del instructor)
+     */
+    public function detalleEstudiante($id): JsonResponse
+    {
+        $personaId = auth()->user()->persona_id;
+
+        $estudiante = Persona::where('id', $id)
+            ->with('perfilEstudiante')
+            ->firstOrFail();
+
+        $esSuEstudiante = Matricula::where('estudiante_id', $id)
+            ->whereHas('cursoAbierto', fn($q) => $q->where('docente_id', $personaId))
+            ->exists();
+
+        if (!$esSuEstudiante) {
+            return response()->json(['mensaje' => 'El estudiante no pertenece a ninguno de tus cursos.'], 403);
+        }
+
+        return response()->json([
+            'datos' => [
+                'id' => $estudiante->id,
+                'nombres' => $estudiante->nombres,
+                'apellidos' => $estudiante->apellidos,
+                'cedula' => $estudiante->cedula,
+                'correo' => $estudiante->correo,
+                'celular' => $estudiante->celular,
+                'ciudad' => $estudiante->ciudad,
+                'perfil_estudiante' => $estudiante->perfilEstudiante,
+            ]
         ]);
     }
 

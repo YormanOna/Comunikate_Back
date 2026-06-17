@@ -98,6 +98,8 @@ class PersonaController extends Controller
 
         if ($request->has('tipo')) {
             $query->where('tipo', $request->tipo);
+        } else {
+            $query->whereIn('tipo', ['instructor', 'staff', 'secretaria', 'admin', 'pasante']);
         }
 
         if ($request->has('activos')) {
@@ -235,7 +237,7 @@ class PersonaController extends Controller
             'admin' => 'Administrador',
             'instructor' => 'Instructor',
             'staff' => 'Staff',
-            'secretaria' => 'Staff',
+            'secretaria' => 'Secretaria',
         ];
 
         $nombreRol = $mapa[$cuenta->persona->tipo] ?? null;

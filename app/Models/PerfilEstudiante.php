@@ -16,10 +16,11 @@ class PerfilEstudiante extends Model
     protected $fillable = [
         'persona_id',
         'fecha_nacimiento',
-        'notas_internas',
-        'primera_matricula',
-        'ultima_matricula',
-        'total_cursos',
+        'genero',
+        'ocupacion',
+        'direccion',
+        'estado_civil',
+        'edad',
     ];
 
     protected function casts(): array

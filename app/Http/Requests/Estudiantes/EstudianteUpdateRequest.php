@@ -26,6 +26,10 @@ class EstudianteUpdateRequest extends FormRequest
             'fecha_nacimiento' => ['nullable', 'date', 'before:today'],
             'notas_internas' => ['nullable', 'string'],
             'es_activo' => ['sometimes', 'boolean'],
+            'ocupacion' => ['nullable', 'string', 'max:100'],
+            'direccion' => ['nullable', 'string', 'max:1000'],
+            'estado_civil' => ['nullable', 'string', 'max:20'],
+            'edad' => ['nullable', 'integer', 'min:0', 'max:150'],
         ];
     }
 

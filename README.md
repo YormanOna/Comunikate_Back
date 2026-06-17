@@ -53,6 +53,7 @@ cp .env.example .env
 composer install
 php artisan key:generate
 php artisan migrate
+# No es necesario ya que la DB, tiene el schema completo
 php artisan db:seed
 ```
 
@@ -98,3 +99,4 @@ php artisan view:cache
 | `403 Forbidden` al autenticar | Roles no asignados | `php artisan db:seed --class=RolesAndPermissionsSeeder --force` |
 | `Target class [...] does not exist` | Autoload desactualizado | `composer dump-autoload` |
 | `Connection refused` (BD) | PostgreSQL no corre | Verificar `systemctl status postgresql` |
+| Imágenes no se ven (404) | Falta symlink `public/storage` | `php artisan storage:link` |

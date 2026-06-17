@@ -68,6 +68,10 @@ class RegistrationController extends Controller
                     'apellidos' => $validated['apellidos'],
                     'cedula' => $validated['cedula'] ?? null,
                     'celular' => $validated['celular'] ?? null,
+                    'ocupacion' => $validated['ocupacion'] ?? null,
+                    'direccion' => $validated['direccion'] ?? null,
+                    'estado_civil' => $validated['estado_civil'] ?? null,
+                    'edad' => $validated['edad'] ?? null,
                 ]
             );
             $participanteExternoId = $participanteExterno->id;

@@ -60,13 +60,14 @@ class CatalogoCursoDocumentation
      *                 items=@OA\Items(
       *                     @OA\Property(property="id", type="string", format="uuid"),
       *                     @OA\Property(property="nombre", type="string"),
-      *                     @OA\Property(property="descripcion", type="string"),
-      *                     @OA\Property(property="categoria", type="string"),
-      *                     @OA\Property(property="duracion_horas", type="integer"),
-      *                     @OA\Property(property="modulos_default", type="integer"),
-      *                     @OA\Property(property="estado", type="string"),
-      *                     @OA\Property(property="created_at", type="string", format="date-time"),
-      *                     @OA\Property(property="updated_at", type="string", format="date-time")
+      *             @OA\Property(property="descripcion", type="string"),
+      *             @OA\Property(property="categoria", type="string"),
+      *             @OA\Property(property="color", type="string", example="#3B82F6"),
+      *             @OA\Property(property="duracion_horas", type="integer"),
+      *             @OA\Property(property="modulos_default", type="integer"),
+      *             @OA\Property(property="estado", type="string"),
+      *             @OA\Property(property="created_at", type="string", format="date-time"),
+      *             @OA\Property(property="updated_at", type="string", format="date-time")
      *                 )
      *             ),
      *             @OA\Property(property="meta", type="object")
@@ -97,7 +98,8 @@ class CatalogoCursoDocumentation
       *             required={"nombre", "duracion_horas", "modulos_default"},
       *             @OA\Property(property="nombre", type="string", example="Matemáticas I"),
      *             @OA\Property(property="descripcion", type="string", example="Fundamentos de matemáticas"),
-     *             @OA\Property(property="categoria", type="string", example="regular"),
+      *             @OA\Property(property="categoria", type="string", example="regular"),
+     *             @OA\Property(property="color", type="string", example="#3B82F6"),
      *             @OA\Property(property="duracion_horas", type="integer", example=60),
      *             @OA\Property(property="modulos_default", type="integer", example=2)
      *         )
@@ -149,8 +151,9 @@ class CatalogoCursoDocumentation
       *         @OA\JsonContent(
       *             @OA\Property(property="id", type="string"),
       *             @OA\Property(property="nombre", type="string"),
+      *             @OA\Property(property="color", type="string", example="#3B82F6"),
       *             @OA\Property(
-     *                 property="modulos",
+      *                 property="modulos",
      *                 type="array",
      *                 items=@OA\Items(
      *                     @OA\Property(property="id", type="string"),
@@ -192,9 +195,10 @@ class CatalogoCursoDocumentation
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="nombre", type="string"),
-     *             @OA\Property(property="descripcion", type="string"),
-     *             @OA\Property(property="duracion_horas", type="integer")
+      *             @OA\Property(property="nombre", type="string"),
+      *             @OA\Property(property="descripcion", type="string"),
+      *             @OA\Property(property="color", type="string", example="#3B82F6"),
+      *             @OA\Property(property="duracion_horas", type="integer")
      *         )
      *     ),
      *     @OA\Response(

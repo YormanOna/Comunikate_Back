@@ -32,6 +32,10 @@ class StoreRegistrationRequest extends FormRequest
             'apellidos' => 'nullable|string|max:100',
             'cedula' => 'nullable|string|max:20',
             'celular' => 'nullable|string|max:20',
+            'ocupacion' => 'nullable|string|max:100',
+            'direccion' => 'nullable|string|max:1000',
+            'estado_civil' => 'nullable|string|max:20',
+            'edad' => 'nullable|integer|min:0|max:150',
             
             // Curso y pago
             'curso_abierto_id' => 'required|uuid|exists:cursos_abiertos,id',
@@ -92,6 +96,10 @@ class StoreRegistrationRequest extends FormRequest
                 'apellidos' => null,
                 'cedula' => null,
                 'celular' => null,
+                'ocupacion' => null,
+                'direccion' => null,
+                'estado_civil' => null,
+                'edad' => null,
             ]);
         }
     }

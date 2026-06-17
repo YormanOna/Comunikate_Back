@@ -23,6 +23,7 @@ class UpdateCatalogoCursoRequest extends FormRequest
             'es_activo' => 'boolean',
             'categoria' => 'nullable|in:regular,personalizado,taller',
             'imagen' => 'nullable|string|max:255',
+            'color' => 'nullable|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
         ];
     }
 

@@ -53,7 +53,6 @@ class EstudianteController extends Controller
                 return [
                     'id' => $p->id,
                     'tipo' => 'estudiante',
-                    'tipo_estudiante' => 'interno',
                     'nombres' => $p->nombres,
                     'apellidos' => $p->apellidos,
                     'cedula' => $p->cedula,
@@ -114,7 +113,6 @@ class EstudianteController extends Controller
                 return [
                     'id' => $c->id,
                     'tipo' => 'estudiante',
-                    'tipo_estudiante' => $tieneRegular ? 'interno' : 'externo',
                     'nombres' => $c->nombres,
                     'apellidos' => $c->apellidos ?? '',
                     'cedula' => $c->cedula,
@@ -149,11 +147,6 @@ class EstudianteController extends Controller
         if ($request->filled('estado_pago')) {
             $estado = $request->estado_pago;
             $todos = $todos->filter(fn ($e) => $e['estado_pago'] === $estado);
-        }
-
-        if ($request->filled('tipo_estudiante')) {
-            $tipo = $request->tipo_estudiante;
-            $todos = $todos->filter(fn ($e) => $e['tipo_estudiante'] === $tipo);
         }
 
         if ($request->filled('ordenar_por')) {
@@ -231,7 +224,6 @@ class EstudianteController extends Controller
                     'correo' => $cliente->correo,
                     'celular' => $cliente->celular,
                     'es_activo' => true,
-                    'tipo_estudiante' => 'externo',
                     'total_cursos' => $totalCursos,
                     'estado_pago' => 'ninguno',
                     'saldo_pendiente' => 0,
@@ -241,8 +233,8 @@ class EstudianteController extends Controller
                         'pais' => $cliente->ciudad->pais ?? null,
                     ] : null,
                     'perfil_estudiante' => null,
-                    'creado_en' => null,
-                    'actualizado_en' => null,
+                    'creado_en' => $cliente->created_at?->toIso8601String(),
+                    'actualizado_en' => $cliente->updated_at?->toIso8601String(),
                 ],
             ]);
         }
@@ -365,6 +357,10 @@ class EstudianteController extends Controller
                 'persona_id' => $persona->id,
                 'fecha_nacimiento' => $datos['fecha_nacimiento'] ?? null,
                 'notas_internas' => $datos['notas_internas'] ?? null,
+                'ocupacion' => $datos['ocupacion'] ?? null,
+                'direccion' => $datos['direccion'] ?? null,
+                'estado_civil' => $datos['estado_civil'] ?? null,
+                'edad' => $datos['edad'] ?? null,
             ]);
 
             return $persona->load(['ciudad', 'perfilEstudiante']);
@@ -389,6 +385,10 @@ class EstudianteController extends Controller
             $datosPerfil = array_intersect_key($datos, array_flip([
                 'fecha_nacimiento',
                 'notas_internas',
+                'ocupacion',
+                'direccion',
+                'estado_civil',
+                'edad',
             ]));
 
             $datosPersona = array_diff_key($datos, $datosPerfil);
@@ -576,7 +576,6 @@ class EstudianteController extends Controller
                 'cedula' => $estudiante->cedula,
                 'correo' => $estudiante->correo,
                 'celular' => $estudiante->celular,
-                'tipo_estudiante' => 'interno',
             ];
 
             foreach ($estudiante->matriculas as $matricula) {
@@ -635,7 +634,6 @@ class EstudianteController extends Controller
                 'cedula' => $cliente->cedula,
                 'correo' => $cliente->correo,
                 'celular' => $cliente->celular,
-                'tipo_estudiante' => 'externo',
             ];
 
             foreach ($cliente->solicitudesInscripcion as $solicitud) {
@@ -732,11 +730,9 @@ class EstudianteController extends Controller
         $tasaCompletacion = $tasaAprobacion > 0 ? round(($completadas / $tasaAprobacion) * 100, 2) : 0;
 
         return response()->json([
-            'datos' => [
-                'total_estudiantes' => $internosCount + $externosCount,
-                'internos' => $internosCount,
-                'externos' => $externosCount,
-                'por_ciudad' => $porCiudad,
+        'datos' => [
+            'total_estudiantes' => $internosCount + $externosCount,
+            'por_ciudad' => $porCiudad,
                 'matriculas_por_estado' => $matriculasStats,
                 'promedio_general' => round((float) $promedioGeneral, 2),
                 'tasa_completacion' => $tasaCompletacion,
@@ -834,7 +830,6 @@ class EstudianteController extends Controller
                     'apellidos' => $p->apellidos,
                     'cedula' => $p->cedula,
                     'correo' => $p->correo,
-                    'tipo_estudiante' => 'interno',
                     'total_cursos' => $totalMatriculas,
                     'estado_pago' => $estadoPago,
                     'saldo_pendiente' => $p->matriculas->sum(function($m) {
@@ -850,9 +845,6 @@ class EstudianteController extends Controller
         $resultado = $internos->filter(function ($e) use ($criterios) {
             if (isset($criterios['estado_pago']) && $criterios['estado_pago'] !== 'todos') {
                 if ($e['estado_pago'] !== $criterios['estado_pago']) return false;
-            }
-            if (isset($criterios['tipo_estudiante']) && $criterios['tipo_estudiante'] !== 'todos') {
-                if ($e['tipo_estudiante'] !== $criterios['tipo_estudiante']) return false;
             }
             if (isset($criterios['cursos_min']) && $e['total_cursos'] < $criterios['cursos_min']) return false;
             if (isset($criterios['cursos_max']) && $e['total_cursos'] > $criterios['cursos_max']) return false;
@@ -1034,7 +1026,6 @@ class EstudianteController extends Controller
             'ids' => 'nullable|array',
             'buscar' => 'nullable|string',
             'estado_pago' => 'nullable|string',
-            'tipo_estudiante' => 'nullable|string',
         ]);
 
         $formato = $request->input('formato', 'csv');
@@ -1088,7 +1079,6 @@ class EstudianteController extends Controller
                 'cedula' => $p->cedula,
                 'correo' => $p->correo,
                 'celular' => $p->celular,
-                'tipo_estudiante' => 'interno',
                 'total_cursos' => $totalMatriculas,
                 'estado_pago' => $estadoPago === 'ninguno' ? 'Sin cursos' : $estadoPago,
                 'saldo_pendiente' => $p->matriculas->sum(function($m) {
@@ -1151,7 +1141,6 @@ class EstudianteController extends Controller
                 'cedula' => $c->cedula,
                 'correo' => $c->correo,
                 'celular' => $c->celular,
-                'tipo_estudiante' => 'externo',
                 'total_cursos' => $totalSolicitudes,
                 'estado_pago' => $estadoPago === 'ninguno' ? 'Sin cursos' : $estadoPago,
                 'saldo_pendiente' => $solicitudes->sum(function($s) {

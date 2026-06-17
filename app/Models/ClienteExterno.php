@@ -26,6 +26,10 @@ class ClienteExterno extends Model
         'celular',
         'ciudad_id',
         'observaciones',
+        'ocupacion',
+        'direccion',
+        'estado_civil',
+        'edad',
     ];
 
     protected $casts = [
