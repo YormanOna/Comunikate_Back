@@ -4,44 +4,40 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Taller extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids;
 
     protected $connection = 'pgsql';
     protected $table = 'academic.talleres';
 
     protected $fillable = [
-        'codigo',
         'nombre',
         'descripcion',
-        'categoria',
-        'fecha_inicio',
-        'fecha_fin',
-        'capacidad',
-        'profesor_id',
+        'fecha',
+        'hora_inicio',
+        'hora_fin',
+        'instructor_id',
+        'modalidad',
+        'capacidad_maxima',
+        'precio',
         'estado',
     ];
 
+    public $timestamps = false;
+
     protected $casts = [
-        'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
-        'capacidad' => 'integer',
+        'fecha' => 'date',
+        'precio' => 'decimal:2',
+        'capacidad_maxima' => 'integer',
     ];
 
-    // Relations
-    public function profesor(): BelongsTo
+    public function instructor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'profesor_id');
-    }
-
-    public function horarios(): HasMany
-    {
-        return $this->hasMany(HorarioTaller::class, 'taller_id');
+        return $this->belongsTo(Persona::class, 'instructor_id');
     }
 
     public function inscripciones(): HasMany
@@ -49,68 +45,52 @@ class Taller extends Model
         return $this->hasMany(InscripcionTaller::class, 'taller_id');
     }
 
-    public function inscripciones_externos(): HasMany
-    {
-        return $this->hasMany(InscripcionExternoTaller::class, 'taller_id');
-    }
-
     public function asistencias(): HasMany
     {
         return $this->hasMany(AsistenciaTaller::class, 'taller_id');
     }
 
-    // Scopes
     public function scopeActivos($query)
     {
-        return $query->whereIn('estado', ['planificado', 'activo']);
+        return $query->whereIn('estado', ['pendiente', 'confirmado']);
     }
 
-    public function scopePorProfesor($query, $profesor_id)
+    public function scopePorInstructor($query, $instructorId)
     {
-        return $query->where('profesor_id', $profesor_id);
+        return $query->where('instructor_id', $instructorId);
     }
 
-    public function scopePorCategoria($query, $categoria)
+    public function scopeProximos($query)
     {
-        return $query->where('categoria', $categoria);
+        return $query->where('fecha', '>=', now()->toDateString())
+            ->whereIn('estado', ['pendiente', 'confirmado']);
     }
 
-    public function scopeFechasEntre($query, $fecha_inicio, $fecha_fin)
+    public function scopePasados($query)
     {
-        return $query->whereBetween('fecha_inicio', [$fecha_inicio, $fecha_fin]);
+        return $query->where('fecha', '<', now()->toDateString());
     }
 
-    // Utility Methods
     public function totalInscripciones(): int
     {
-        return $this->inscripciones()->count() + $this->inscripciones_externos()->count();
+        return $this->inscripciones()->count();
     }
 
     public function capacidadDisponible(): int
     {
-        return $this->capacidad - $this->totalInscripciones();
-    }
-
-    public function estaActivo(): bool
-    {
-        return $this->estado === 'activo';
+        return $this->capacidad_maxima - $this->totalInscripciones();
     }
 
     public function permitirInscripcion(): bool
     {
-        return $this->fecha_inicio > now()->toDateString() && 
-               $this->estado !== 'cancelado' && 
-               $this->capacidadDisponible() > 0;
+        return $this->fecha && $this->fecha->isFuture()
+            && $this->estado !== 'cancelado'
+            && $this->capacidadDisponible() > 0;
     }
 
-    public function tasaAsistencia(): float
+    public function tasaOcupacion(): float
     {
-        $sesiones = $this->asistencias()->count();
-        if ($sesiones === 0) return 0;
-
-        $totalAsistencias = $this->asistencias()->sum('asistentes');
-        $totalCapacidad = $this->asistencias()->sum('capacidad_registrada');
-
-        return $totalCapacidad > 0 ? ($totalAsistencias / $totalCapacidad) * 100 : 0;
+        if (!$this->capacidad_maxima) return 0;
+        return ($this->totalInscripciones() / $this->capacidad_maxima) * 100;
     }
 }

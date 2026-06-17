@@ -8,6 +8,7 @@ use App\Models\SolicitudInscripcion;
 use App\Models\CursoAbierto;
 use App\Models\ClienteExterno;
 use App\Models\Persona;
+use App\Models\PerfilEstudiante;
 use App\Services\RegistrationValidationService;
 use App\Services\PaymentVerificationService;
 use Illuminate\Http\Request;
@@ -136,6 +137,18 @@ class RegistrationController extends Controller
             'fecha_pago_declarada' => $validated['fecha_pago_declarada'],
             'estado' => SolicitudInscripcion::ESTADO_PENDIENTE_VALIDACION,
         ]);
+
+        // 6. Si es estudiante interno, actualizar su perfil_estudiante con los datos enviados
+        if (!empty($personaId)) {
+            $perfil = PerfilEstudiante::firstOrNew(['persona_id' => $personaId]);
+            $perfil->fill([
+                'edad' => $validated['edad'] ?? $perfil->edad,
+                'ocupacion' => $validated['ocupacion'] ?? $perfil->ocupacion,
+                'direccion' => $validated['direccion'] ?? $perfil->direccion,
+                'estado_civil' => $validated['estado_civil'] ?? $perfil->estado_civil,
+                'fecha_nacimiento' => $validated['fecha_nacimiento'] ?? $perfil->fecha_nacimiento,
+            ])->save();
+        }
 
         return response()->json([
             'mensaje' => 'Solicitud de inscripción registrada correctamente',

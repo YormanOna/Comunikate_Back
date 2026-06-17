@@ -36,6 +36,14 @@ class CursoAbiertoController extends Controller
             $query->vigentes();
         }
 
+        if ($request->has('no_iniciados') && $request->no_iniciados == 'true') {
+            $query->where('fecha_inicio', '>', \Carbon\Carbon::now());
+        }
+
+        if ($request->has('modalidad')) {
+            $query->where('modalidad', $request->modalidad);
+        }
+
         if ($request->has('activos') && $request->activos == 'true') {
             $query->activos();
         }
@@ -268,6 +276,52 @@ class CursoAbiertoController extends Controller
         $curso = CursoAbierto::findOrFail($id);
         $modulos = $curso->modulos()->paginate(15);
         return response()->json(['data' => $modulos->items(), 'meta' => ['total' => $modulos->total()]]);
+    }
+
+    public function exportar($id, Request $request)
+    {
+        $curso = CursoAbierto::findOrFail($id);
+        $matriculas = $curso->matriculas()
+            ->with(['estudiante', 'solicitudInscripcion.estudiante', 'solicitudInscripcion.participanteExterno'])
+            ->get();
+
+        $rows = $matriculas->map(function ($m) {
+            $nombres = $m->estudiante->nombres ?? $m->solicitudInscripcion?->estudiante?->nombres ?? $m->solicitudInscripcion?->participanteExterno?->nombres ?? '—';
+            $apellidos = $m->estudiante->apellidos ?? $m->solicitudInscripcion?->estudiante?->apellidos ?? $m->solicitudInscripcion?->participanteExterno?->apellidos ?? '';
+            $cedula = $m->estudiante->cedula ?? $m->solicitudInscripcion?->estudiante?->cedula ?? $m->solicitudInscripcion?->participanteExterno?->cedula ?? '—';
+            $correo = $m->estudiante->correo ?? $m->solicitudInscripcion?->estudiante?->correo ?? $m->solicitudInscripcion?->participanteExterno?->correo ?? '—';
+            $fecha = $m->fecha_inscripcion ? \Carbon\Carbon::parse($m->fecha_inscripcion)->format('d/m/Y') : '—';
+            return compact('nombres', 'apellidos', 'cedula', 'correo', 'fecha');
+        });
+
+        $formato = $request->get('formato', 'csv');
+
+        if ($formato === 'pdf') {
+            $html = view('exports.participantes-curso', [
+                'curso' => $curso,
+                'rows' => $rows,
+            ])->render();
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+            return $pdf->download("participantes_{$curso->id}.pdf");
+        }
+
+        // CSV
+        $csvHeader = "Nombres,Apellidos,Cédula,Correo,Fecha Inscripción\n";
+        $csvBody = $rows->map(fn($r) => implode(',', [
+            '"' . str_replace('"', '""', $r['nombres']) . '"',
+            '"' . str_replace('"', '""', $r['apellidos']) . '"',
+            $r['cedula'],
+            $r['correo'],
+            $r['fecha'],
+        ]))->implode("\n");
+
+        $csv = $csvHeader . $csvBody;
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"participantes_{$curso->id}.csv\"",
+        ]);
     }
 
     public function estadisticas($id)

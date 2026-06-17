@@ -13,28 +13,29 @@ class UpdateTallerRequest extends FormRequest
 
     public function rules(): array
     {
-        $taller_id = $this->route('id');
-
         return [
-            'codigo' => ['sometimes', 'string', "unique:talleres,codigo,{$taller_id},id", 'max:50'],
-            'nombre' => ['sometimes', 'string', 'max:255'],
-            'descripcion' => ['nullable', 'string', 'max:1000'],
-            'categoria' => ['sometimes', 'in:taller,seminario,workshop,capacitacion'],
-            'fecha_inicio' => ['sometimes', 'date'],
-            'fecha_fin' => ['sometimes', 'date', 'after:fecha_inicio'],
-            'capacidad' => ['sometimes', 'integer', 'min:1', 'max:500'],
-            'profesor_id' => ['nullable', 'uuid', 'exists:users,id'],
-            'estado' => ['sometimes', 'in:planificado,activo,completado,cancelado'],
+            'nombre' => 'sometimes|string|max:200',
+            'descripcion' => 'nullable|string|max:2000',
+            'fecha' => 'sometimes|date',
+            'hora_inicio' => 'sometimes|date_format:H:i',
+            'hora_fin' => 'sometimes|date_format:H:i',
+            'instructor_id' => 'sometimes|uuid|exists:personas,id',
+            'modalidad' => 'sometimes|in:presencial,virtual',
+            'capacidad_maxima' => 'sometimes|integer|min:1|max:500',
+            'precio' => 'sometimes|numeric|min:0',
+            'estado' => 'sometimes|in:pendiente,confirmado,completado,cancelado',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'codigo.unique' => 'El código ya existe',
-            'fecha_fin.after' => 'La fecha de fin debe ser posterior a la de inicio',
-            'capacidad.min' => 'La capacidad debe ser mínimo 1',
-            'profesor_id.exists' => 'El profesor no existe',
+            'instructor_id.exists' => 'El instructor seleccionado no existe',
+            'modalidad.in' => 'La modalidad debe ser presencial o virtual',
+            'capacidad_maxima.integer' => 'La capacidad debe ser un número entero',
+            'capacidad_maxima.min' => 'La capacidad mínima es 1',
+            'precio.numeric' => 'El precio debe ser un número válido',
+            'precio.min' => 'El precio no puede ser negativo',
         ];
     }
 }

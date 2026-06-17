@@ -10,6 +10,7 @@ use App\Models\Asistencia;
 use App\Models\Nota;
 use App\Models\Modulo;
 use App\Models\Persona;
+use App\Models\ClienteExterno;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -92,9 +93,44 @@ class InstructorPortalController extends Controller
     {
         $personaId = auth()->user()->persona_id;
 
-        $estudiante = Persona::where('id', $id)
-            ->with('perfilEstudiante')
-            ->firstOrFail();
+        // Intentar como Persona (estudiante interno)
+        $estudiante = Persona::with('perfilEstudiante')->find($id);
+        $esExterno = false;
+
+        if (!$estudiante) {
+            // Intentar como ClienteExterno (participante externo)
+            $cliente = ClienteExterno::with('ciudad')->find($id);
+            if (!$cliente) {
+                return response()->json(['mensaje' => 'Estudiante no encontrado.'], 404);
+            }
+
+            $esSuEstudiante = Matricula::whereHas('solicitudInscripcion', fn($q) => $q->where('participante_externo_id', $id))
+                ->whereHas('cursoAbierto', fn($q) => $q->where('docente_id', $personaId))
+                ->exists();
+
+            if (!$esSuEstudiante) {
+                return response()->json(['mensaje' => 'El estudiante no pertenece a ninguno de tus cursos.'], 403);
+            }
+
+            return response()->json([
+                'datos' => [
+                    'id' => $cliente->id,
+                    'nombres' => $cliente->nombres,
+                    'apellidos' => $cliente->apellidos ?? '',
+                    'cedula' => $cliente->cedula,
+                    'correo' => $cliente->correo,
+                    'celular' => $cliente->celular,
+                    'ciudad' => $cliente->ciudad,
+                    'perfil_estudiante' => [
+                        'fecha_nacimiento' => $cliente->fecha_nacimiento,
+                        'ocupacion' => $cliente->ocupacion,
+                        'direccion' => $cliente->direccion,
+                        'estado_civil' => $cliente->estado_civil,
+                        'edad' => $cliente->edad,
+                    ],
+                ]
+            ]);
+        }
 
         $esSuEstudiante = Matricula::where('estudiante_id', $id)
             ->whereHas('cursoAbierto', fn($q) => $q->where('docente_id', $personaId))

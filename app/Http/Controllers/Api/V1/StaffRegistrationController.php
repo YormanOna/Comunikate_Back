@@ -29,7 +29,7 @@ class StaffRegistrationController extends Controller
     {
         $query = SolicitudInscripcion::with([
             'estudiante:id,nombres,apellidos,correo',
-            'participanteExterno:id,nombres,apellidos,correo',
+            'participanteExterno:id,nombres,apellidos,correo,celular,cedula,ocupacion,direccion,estado_civil,fecha_nacimiento,edad',
             'cursoAbierto:id,catalogo_curso_id,precio_base,capacidad_maxima,estudiantes_inscritos',
             'cursoAbierto.catalogo:id,nombre',
         ]);
@@ -83,7 +83,7 @@ class StaffRegistrationController extends Controller
     {
         $solicitud = SolicitudInscripcion::with([
             'estudiante:id,nombres,apellidos,cedula,correo,celular',
-            'participanteExterno:id,nombres,apellidos,correo,celular,cedula',
+            'participanteExterno:id,nombres,apellidos,correo,celular,cedula,ocupacion,direccion,estado_civil,fecha_nacimiento,edad',
             'cursoAbierto:id,catalogo_curso_id,precio_base,capacidad_maxima,estudiantes_inscritos,fecha_inicio,fecha_fin',
             'cursoAbierto.catalogo:id,nombre,descripcion',
             'validador:id,nombres,apellidos,correo',
@@ -297,15 +297,33 @@ class StaffRegistrationController extends Controller
         $solicitud = SolicitudInscripcion::findOrFail($id);
 
         // Validar datos
-        $validated =         $validated = $request->validate([
+        $validated = $request->validate([
             'nombres' => 'nullable|string|max:255',
             'apellidos' => 'nullable|string|max:255',
             'correo' => 'nullable|email|max:255',
             'celular' => 'nullable|string|max:20',
-            'cedula' => 'nullable|string|max:20',
+            'tipo_id' => 'nullable|in:cedula,dni',
+            'cedula' => [
+                'nullable',
+                'string',
+                'max:20',
+                function ($attribute, $value, $fail) use ($request) {
+                    $tipoId = $request->input('tipo_id');
+                    if ($tipoId === 'cedula' && !empty($value)) {
+                        if (!preg_match('/^\d{10}$/', $value)) {
+                            $fail('La cédula debe tener exactamente 10 dígitos numéricos.');
+                        }
+                    } elseif ($tipoId === 'dni' && !empty($value)) {
+                        if (strlen($value) < 5) {
+                            $fail('El DNI debe tener al menos 5 caracteres.');
+                        }
+                    }
+                },
+            ],
             'ocupacion' => 'nullable|string|max:100',
             'direccion' => 'nullable|string|max:1000',
             'estado_civil' => 'nullable|string|max:20',
+            'fecha_nacimiento' => 'nullable|date',
             'edad' => 'nullable|integer|min:0|max:150',
         ]);
 
@@ -329,6 +347,7 @@ class StaffRegistrationController extends Controller
                     'ocupacion' => $validated['ocupacion'] ?? null,
                     'direccion' => $validated['direccion'] ?? null,
                     'estado_civil' => $validated['estado_civil'] ?? null,
+                    'fecha_nacimiento' => $validated['fecha_nacimiento'] ?? null,
                     'edad' => $validated['edad'] ?? null,
                 ], fn($v) => $v !== null);
 
@@ -346,6 +365,7 @@ class StaffRegistrationController extends Controller
                     'ocupacion' => $validated['ocupacion'] ?? null,
                     'direccion' => $validated['direccion'] ?? null,
                     'estado_civil' => $validated['estado_civil'] ?? null,
+                    'fecha_nacimiento' => $validated['fecha_nacimiento'] ?? null,
                     'edad' => $validated['edad'] ?? null,
                 ], fn($v) => $v !== null);
 

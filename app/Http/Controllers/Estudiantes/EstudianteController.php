@@ -129,7 +129,17 @@ class EstudianteController extends Controller
                         }
                         return ($s->cursoAbierto->precio_base ?? 0) - ($s->monto_solicitado ?? 0);
                     }),
-                    'perfil_estudiante' => null,
+                    'perfil_estudiante' => [
+                        'edad' => $c->edad,
+                        'ocupacion' => $c->ocupacion,
+                        'direccion' => $c->direccion,
+                        'estado_civil' => $c->estado_civil,
+                        'fecha_nacimiento' => $c->fecha_nacimiento,
+                        'primera_matricula' => null,
+                        'ultima_matricula' => null,
+                        'total_cursos' => $solicitudes->count(),
+                        'notas_internas' => null,
+                    ],
                 ];
             });
 
@@ -232,7 +242,17 @@ class EstudianteController extends Controller
                         'nombre' => $cliente->ciudad->nombre,
                         'pais' => $cliente->ciudad->pais ?? null,
                     ] : null,
-                    'perfil_estudiante' => null,
+                    'perfil_estudiante' => [
+                        'edad' => $cliente->edad,
+                        'ocupacion' => $cliente->ocupacion,
+                        'direccion' => $cliente->direccion,
+                        'estado_civil' => $cliente->estado_civil,
+                        'fecha_nacimiento' => $cliente->fecha_nacimiento,
+                        'primera_matricula' => null,
+                        'ultima_matricula' => null,
+                        'total_cursos' => $totalCursos,
+                        'notas_internas' => null,
+                    ],
                     'creado_en' => $cliente->created_at?->toIso8601String(),
                     'actualizado_en' => $cliente->updated_at?->toIso8601String(),
                 ],

@@ -63,6 +63,11 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:10,1')
         ->name('registrations.store');
 
+    // Inscripción pública a taller
+    Route::post('talleres/inscribir', [InscripcionTallerController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('talleres.inscribir.publico');
+
     // Upload de comprobante (público para matrícula)
     Route::post('upload/comprobante', [FileUploadController::class, 'uploadComprobante'])
         ->middleware('throttle:5,1')
@@ -72,6 +77,16 @@ Route::prefix('v1')->group(function () {
     Route::post('upload/cedula', [FileUploadController::class, 'uploadCedula'])
         ->middleware('throttle:5,1')
         ->name('upload.cedula');
+
+    // Upload de comprobante para taller (público)
+    Route::post('talleres/inscripciones/{id}/upload-comprobante', [InscripcionTallerController::class, 'uploadComprobante'])
+        ->middleware('throttle:5,1')
+        ->name('talleres.upload-comprobante.publico');
+
+    // Upload de cédula para taller (público)
+    Route::post('talleres/inscripciones/{id}/upload-cedula', [InscripcionTallerController::class, 'uploadCedula'])
+        ->middleware('throttle:5,1')
+        ->name('talleres.upload-cedula.publico');
 
     // Catálogo de cursos (público, solo lectura)
     Route::get('catalogo-cursos', [CatalogoCursoController::class, 'index'])
@@ -248,6 +263,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{id}/matriculas', [CursoAbiertoController::class, 'matriculas'])->name('cursos-abiertos.matriculas');
             Route::get('{id}/modulos', [CursoAbiertoController::class, 'modulos'])->name('cursos-abiertos.modulos');
             Route::get('{id}/estadisticas', [CursoAbiertoController::class, 'estadisticas'])->name('cursos-abiertos.estadisticas');
+            Route::get('{id}/exportar', [CursoAbiertoController::class, 'exportar'])->name('cursos-abiertos.exportar');
         });
 
         // HORARIOS
@@ -414,12 +430,9 @@ Route::prefix('v1')->group(function () {
         // ========================================================================
 
         Route::prefix('talleres')->group(function () {
-            Route::get('/', [TallerController::class, 'index'])->name('talleres.index');
             Route::post('/', [TallerController::class, 'store'])->name('talleres.store');
-            Route::get('{id}', [TallerController::class, 'show'])->name('talleres.show');
             Route::put('{id}', [TallerController::class, 'update'])->name('talleres.update');
             Route::delete('{id}', [TallerController::class, 'destroy'])->name('talleres.destroy');
-            Route::get('{id}/estadisticas', [TallerController::class, 'estadisticas'])->name('talleres.estadisticas');
             Route::post('cambiar-estado-masivo', [TallerController::class, 'cambiarEstadoMasivo'])->name('talleres.cambiar-estado-masivo');
         });
 
@@ -432,20 +445,24 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::prefix('talleres/{taller_id}/inscripciones')->group(function () {
-            Route::get('estudiantes', [InscripcionTallerController::class, 'indexEstudiantes'])->name('inscripciones-talleres.estudiantes.index');
-            Route::post('estudiantes', [InscripcionTallerController::class, 'storeEstudiante'])->name('inscripciones-talleres.estudiantes.store');
-            Route::get('externos', [InscripcionTallerController::class, 'indexExternos'])->name('inscripciones-talleres.externos.index');
-            Route::post('externos', [InscripcionTallerController::class, 'storeExterno'])->name('inscripciones-talleres.externos.store');
+            Route::get('/', [InscripcionTallerController::class, 'index'])->name('inscripciones-talleres.index');
+            Route::post('/', [InscripcionTallerController::class, 'store'])->name('inscripciones-talleres.store');
         });
 
         Route::prefix('inscripciones-talleres')->group(function () {
-            Route::get('estudiantes/{id}', [InscripcionTallerController::class, 'showEstudiante'])->name('inscripciones-talleres.estudiantes.show');
-            Route::put('estudiantes/{id}', [InscripcionTallerController::class, 'updateEstadoEstudiante'])->name('inscripciones-talleres.estudiantes.update');
-            Route::delete('estudiantes/{id}', [InscripcionTallerController::class, 'destroyEstudiante'])->name('inscripciones-talleres.estudiantes.destroy');
-            Route::get('externos/{id}', [InscripcionTallerController::class, 'showExterno'])->name('inscripciones-talleres.externos.show');
-            Route::put('externos/{id}', [InscripcionTallerController::class, 'updateEstadoExterno'])->name('inscripciones-talleres.externos.update');
-            Route::delete('externos/{id}', [InscripcionTallerController::class, 'destroyExterno'])->name('inscripciones-talleres.externos.destroy');
+            Route::get('/', [InscripcionTallerController::class, 'listarPendientes'])->name('inscripciones-talleres.index');
+            Route::get('{id}', [InscripcionTallerController::class, 'show'])->name('inscripciones-talleres.show');
+            Route::put('{id}', [InscripcionTallerController::class, 'update'])->name('inscripciones-talleres.update');
+            Route::put('{id}/estado', [InscripcionTallerController::class, 'updateEstado'])->name('inscripciones-talleres.update-estado');
+            Route::post('{id}/upload-comprobante', [InscripcionTallerController::class, 'uploadComprobante'])->name('inscripciones-talleres.upload-comprobante');
+            Route::post('{id}/upload-cedula', [InscripcionTallerController::class, 'uploadCedula'])->name('inscripciones-talleres.upload-cedula');
+            Route::post('{id}/verificar-pago', [InscripcionTallerController::class, 'verificarPago'])->name('inscripciones-talleres.verificar-pago');
+            Route::get('{id}/exportar', [InscripcionTallerController::class, 'exportar'])->name('inscripciones-talleres.exportar');
+            Route::delete('{id}', [InscripcionTallerController::class, 'destroy'])->name('inscripciones-talleres.destroy');
         });
+
+        // Exportar participantes de un taller (ruta alternativa)
+        Route::get('talleres/{taller_id}/exportar', [InscripcionTallerController::class, 'exportar'])->name('talleres.exportar');
 
         Route::prefix('participantes-externos')->group(function () {
             Route::get('/', [ParticipanteExternoController::class, 'index'])->name('participantes-externos.index');
@@ -457,7 +474,6 @@ Route::prefix('v1')->group(function () {
 
         Route::prefix('talleres/{taller_id}/asistencias')->group(function () {
             Route::get('/', [AsistenciaTallerController::class, 'index'])->name('asistencias-talleres.index');
-            Route::post('/', [AsistenciaTallerController::class, 'store'])->name('asistencias-talleres.store');
             Route::get('estadisticas', [AsistenciaTallerController::class, 'estadisticas'])->name('asistencias-talleres.estadisticas');
             Route::get('{id}', [AsistenciaTallerController::class, 'show'])->name('asistencias-talleres.show');
             Route::put('{id}', [AsistenciaTallerController::class, 'update'])->name('asistencias-talleres.update');
@@ -552,15 +568,16 @@ Route::prefix('reports')->group(function () {
     });
 
     // ========================================================================
-    // FINANCE MODULE (CENTRO DE PAGOS)
+    // TALLERES (compartido Admin + Instructor)
     // ========================================================================
-    Route::middleware(['auth:sanctum', 'role:Administrador'])->prefix('finanzas')->group(function () {
-        Route::get('resumen', [FinanceController::class, 'getResumen'])->name('finance.resumen');
-        Route::get('cuentas', [FinanceController::class, 'getCuentas'])->name('finance.cuentas');
-        Route::get('cuentas/{id}', [FinanceController::class, 'getCuentaDetalle'])->name('finance.cuenta-detalle');
-        Route::post('pagos', [FinanceController::class, 'registrarPago'])->name('finance.registrar-pago');
-        Route::get('transacciones', [FinanceController::class, 'getTransacciones'])->name('finance.transacciones');
-        Route::post('transacciones/{id}/verificar', [FinanceController::class, 'verificarTransaccion'])->name('finance.verificar-transaccion');
+    Route::middleware(['auth:sanctum', 'role:Administrador|Instructor'])->prefix('academic/talleres')->group(function () {
+        Route::get('/', [TallerController::class, 'index']);
+        Route::get('{id}', [TallerController::class, 'show']);
+        Route::get('{id}/estadisticas', [TallerController::class, 'estadisticas']);
+    });
+
+    Route::middleware(['auth:sanctum', 'role:Administrador|Instructor'])->prefix('academic/talleres/{taller_id}/asistencias')->group(function () {
+        Route::post('/', [AsistenciaTallerController::class, 'store']);
     });
 
     // ========================================================================
@@ -612,17 +629,14 @@ Route::prefix('reports')->group(function () {
         });
 
         Route::prefix('talleres/{taller_id}/inscripciones')->group(function () {
-            Route::get('estudiantes', [InscripcionTallerController::class, 'indexEstudiantes'])->name('secretaria.inscripciones-talleres.estudiantes');
-            Route::post('estudiantes', [InscripcionTallerController::class, 'storeEstudiante'])->name('secretaria.inscripciones-talleres.estudiantes.store');
-            Route::get('externos', [InscripcionTallerController::class, 'indexExternos'])->name('secretaria.inscripciones-talleres.externos');
-            Route::post('externos', [InscripcionTallerController::class, 'storeExterno'])->name('secretaria.inscripciones-talleres.externos.store');
+            Route::get('/', [InscripcionTallerController::class, 'index'])->name('secretaria.inscripciones-talleres.index');
+            Route::post('/', [InscripcionTallerController::class, 'store'])->name('secretaria.inscripciones-talleres.store');
         });
 
         Route::prefix('inscripciones-talleres')->group(function () {
-            Route::put('estudiantes/{id}', [InscripcionTallerController::class, 'updateEstadoEstudiante'])->name('secretaria.inscripciones-talleres.estudiantes.update');
-            Route::delete('estudiantes/{id}', [InscripcionTallerController::class, 'destroyEstudiante'])->name('secretaria.inscripciones-talleres.estudiantes.destroy');
-            Route::put('externos/{id}', [InscripcionTallerController::class, 'updateEstadoExterno'])->name('secretaria.inscripciones-talleres.externos.update');
-            Route::delete('externos/{id}', [InscripcionTallerController::class, 'destroyExterno'])->name('secretaria.inscripciones-talleres.externos.destroy');
+            Route::get('{id}', [InscripcionTallerController::class, 'show'])->name('secretaria.inscripciones-talleres.show');
+            Route::put('{id}/estado', [InscripcionTallerController::class, 'updateEstado'])->name('secretaria.inscripciones-talleres.update-estado');
+            Route::delete('{id}', [InscripcionTallerController::class, 'destroy'])->name('secretaria.inscripciones-talleres.destroy');
         });
 
         // Servicios - Podcast

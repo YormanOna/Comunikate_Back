@@ -3,207 +3,288 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreInscripcionTallerRequest;
 use App\Models\InscripcionTaller;
-use App\Models\InscripcionExternoTaller;
 use App\Models\Taller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class InscripcionTallerController extends Controller
 {
-    /**
-     * Lista inscripciones de un taller (estudiantes)
-     */
-    public function indexEstudiantes(string $taller_id): JsonResponse
+    public function index(string $tallerId, Request $request): JsonResponse
     {
-        Taller::findOrFail($taller_id);
+        Taller::findOrFail($tallerId);
 
-        $inscripciones = InscripcionTaller::where('taller_id', $taller_id)
-            ->with(['estudiante', 'taller'])
-            ->orderBy('fecha_inscripcion', 'desc')
-            ->paginate(15);
+        $query = InscripcionTaller::where('taller_id', $tallerId);
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('nombres', 'ilike', "%{$s}%")
+                  ->orWhere('apellidos', 'ilike', "%{$s}%")
+                  ->orWhere('cedula', 'ilike', "%{$s}%")
+                  ->orWhere('correo', 'ilike', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        $inscripciones = $query->orderBy('fecha_inscripcion', 'desc')
+            ->paginate($request->per_page ?? 50);
 
         return response()->json($inscripciones);
     }
 
-    /**
-     * Lista inscripciones de participantes externos
-     */
-    public function indexExternos(string $taller_id): JsonResponse
+    public function listarPendientes(Request $request): JsonResponse
     {
-        Taller::findOrFail($taller_id);
+        $query = InscripcionTaller::with('taller');
 
-        $inscripciones = InscripcionExternoTaller::where('taller_id', $taller_id)
-            ->with(['participante', 'taller'])
-            ->orderBy('fecha_inscripcion', 'desc')
-            ->paginate(15);
+        if ($request->filled('pago_verificado')) {
+            $query->where('pago_verificado', $request->pago_verificado === 'true');
+        }
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('nombres', 'ilike', "%{$s}%")
+                  ->orWhere('apellidos', 'ilike', "%{$s}%")
+                  ->orWhere('cedula', 'ilike', "%{$s}%");
+            });
+        }
+
+        $inscripciones = $query->orderBy('fecha_inscripcion', 'desc')
+            ->paginate($request->per_page ?? 50);
 
         return response()->json($inscripciones);
     }
 
-    /**
-     * Inscribir estudiante en taller
-     */
-    public function storeEstudiante(StoreInscripcionTallerRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $taller = Taller::findOrFail($request->taller_id);
+        $validated = $request->validate([
+            'taller_id' => 'required|uuid|exists:talleres,id',
+            'nombres' => 'required|string|max:100',
+            'apellidos' => 'required|string|max:100',
+            'cedula' => 'required|string|max:20',
+            'correo' => 'required|email|max:150',
+            'telefono' => 'nullable|string|max:20',
+            'ocupacion' => 'nullable|string|max:100',
+            'direccion' => 'nullable|string|max:500',
+            'estado_civil' => 'nullable|string|max:20',
+            'fecha_nacimiento' => 'nullable|date',
+            'edad' => 'nullable|integer|min:0|max:150',
+            'tipo_pago' => 'required|in:completo,abono',
+            'monto_pagado' => 'required|numeric|min:0.01',
+            'metodo_pago' => 'nullable|string|max:50',
+            'fecha_pago' => 'nullable|date',
+        ]);
 
-        // Validar que la fecha de inicio no haya pasado
-        if ($taller->fecha_inicio <= now()->toDateString()) {
+        $taller = Taller::findOrFail($validated['taller_id']);
+
+        if (!$taller->permitirInscripcion()) {
             return response()->json([
-                'message' => 'No se puede inscribir después de la fecha de inicio del taller',
-                'fecha_inicio' => $taller->fecha_inicio,
+                'mensaje' => 'El taller no está disponible para inscripciones',
             ], 422);
         }
 
-        // Validar que no exista inscripción anterior
-        $existe = InscripcionTaller::where([
-            'taller_id' => $request->taller_id,
-            'estudiante_id' => $request->estudiante_id,
-        ])->exists();
-
-        if ($existe) {
-            return response()->json([
-                'message' => 'El estudiante ya está inscrito en este taller',
-            ], 422);
-        }
-
-        // Validar capacidad
         if ($taller->capacidadDisponible() <= 0) {
             return response()->json([
-                'message' => 'El taller está lleno',
-                'capacidad' => $taller->capacidad,
-                'inscritos' => $taller->totalInscripciones(),
+                'mensaje' => 'El taller está lleno',
+            ], 422);
+        }
+
+        if ($validated['tipo_pago'] === 'completo' && (float)$validated['monto_pagado'] != (float)$taller->precio) {
+            return response()->json([
+                'mensaje' => "Para pago completo, el monto debe ser {$taller->precio}",
+            ], 422);
+        }
+
+        if ($validated['tipo_pago'] === 'abono' && ((float)$validated['monto_pagado'] <= 0 || (float)$validated['monto_pagado'] >= (float)$taller->precio)) {
+            return response()->json([
+                'mensaje' => "Para abono, el monto debe ser mayor a 0 y menor a {$taller->precio}",
             ], 422);
         }
 
         $inscripcion = InscripcionTaller::create([
-            'taller_id' => $request->taller_id,
-            'estudiante_id' => $request->estudiante_id,
+            'taller_id' => $validated['taller_id'],
+            'nombres' => $validated['nombres'],
+            'apellidos' => $validated['apellidos'],
+            'cedula' => $validated['cedula'],
+            'correo' => $validated['correo'],
+            'telefono' => $validated['telefono'] ?? null,
+            'ocupacion' => $validated['ocupacion'] ?? null,
+            'direccion' => $validated['direccion'] ?? null,
+            'estado_civil' => $validated['estado_civil'] ?? null,
+            'fecha_nacimiento' => $validated['fecha_nacimiento'] ?? null,
+            'edad' => $validated['edad'] ?? null,
             'fecha_inscripcion' => now()->toDateString(),
-            'estado' => 'inscrito',
+            'estado' => 'activo',
+            'tipo_pago' => $validated['tipo_pago'],
+            'monto_pagado' => $validated['monto_pagado'],
+            'metodo_pago' => $validated['metodo_pago'] ?? null,
+            'fecha_pago' => $validated['fecha_pago'] ?? now()->toDateString(),
         ]);
 
-        return response()->json($inscripcion->load(['estudiante', 'taller']), 201);
+        return response()->json($inscripcion, 201);
     }
 
-    /**
-     * Inscribir participante externo en taller
-     */
-    public function storeExterno(Request $request, string $taller_id): JsonResponse
+    public function uploadComprobante(Request $request, string $id): JsonResponse
     {
         $request->validate([
-            'participante_externo_id' => 'required|uuid|exists:academic.participantes_externos,id',
+            'archivo' => 'required|file|image|max:5120',
         ]);
 
-        $taller = Taller::findOrFail($taller_id);
+        $inscripcion = InscripcionTaller::findOrFail($id);
 
-        // Validar que la fecha de inicio no haya pasado
-        if ($taller->fecha_inicio <= now()->toDateString()) {
-            return response()->json([
-                'message' => 'No se puede inscribir después de la fecha de inicio del taller',
-            ], 422);
-        }
+        $file = $request->file('archivo');
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('comprobantes-talleres', $filename, 'public');
 
-        // Validar que no exista inscripción anterior
-        $existe = InscripcionExternoTaller::where([
-            'taller_id' => $taller_id,
-            'participante_externo_id' => $request->participante_externo_id,
-        ])->exists();
+        $inscripcion->update(['comprobante_url' => '/storage/' . $path]);
 
-        if ($existe) {
-            return response()->json([
-                'message' => 'El participante ya está inscrito en este taller',
-            ], 422);
-        }
-
-        // Validar capacidad
-        if ($taller->capacidadDisponible() <= 0) {
-            return response()->json([
-                'message' => 'El taller está lleno',
-            ], 422);
-        }
-
-        $inscripcion = InscripcionExternoTaller::create([
-            'taller_id' => $taller_id,
-            'participante_externo_id' => $request->participante_externo_id,
-            'fecha_inscripcion' => now()->toDateString(),
-            'estado' => 'inscrito',
+        return response()->json([
+            'mensaje' => 'Comprobante subido correctamente',
+            'comprobante_url' => $inscripcion->comprobante_url,
         ]);
-
-        return response()->json($inscripcion->load(['participante', 'taller']), 201);
     }
 
-    /**
-     * Ver detalle de una inscripción de estudiante
-     */
-    public function showEstudiante(string $id): JsonResponse
+    public function verificarPago(string $id): JsonResponse
     {
-        $inscripcion = InscripcionTaller::with(['estudiante', 'taller'])->findOrFail($id);
+        $inscripcion = InscripcionTaller::findOrFail($id);
+        $inscripcion->update(['pago_verificado' => !$inscripcion->pago_verificado]);
 
+        return response()->json([
+            'mensaje' => $inscripcion->pago_verificado ? 'Pago verificado' : 'Verificación de pago removida',
+            'pago_verificado' => $inscripcion->pago_verificado,
+        ]);
+    }
+
+    public function uploadCedula(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'archivo' => 'required|file|image|max:5120',
+        ]);
+
+        $inscripcion = InscripcionTaller::findOrFail($id);
+
+        $file = $request->file('archivo');
+        $filename = \Illuminate\Support\Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('cedulas-talleres', $filename, 'public');
+
+        $inscripcion->update(['cedula_url' => '/storage/' . $path]);
+
+        return response()->json([
+            'mensaje' => 'Cédula subida correctamente',
+            'cedula_url' => $inscripcion->cedula_url,
+        ]);
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'nombres' => 'sometimes|string|max:100',
+            'apellidos' => 'sometimes|string|max:100',
+            'cedula' => 'sometimes|string|max:20',
+            'correo' => 'sometimes|email|max:150',
+            'telefono' => 'nullable|string|max:20',
+            'ocupacion' => 'nullable|string|max:100',
+            'direccion' => 'nullable|string|max:500',
+            'estado_civil' => 'nullable|string|max:20',
+            'fecha_nacimiento' => 'nullable|date',
+            'edad' => 'nullable|integer|min:0|max:150',
+            'tipo_pago' => 'sometimes|in:completo,abono',
+            'monto_pagado' => 'sometimes|numeric|min:0',
+            'metodo_pago' => 'nullable|string|max:50',
+        ]);
+
+        $inscripcion = InscripcionTaller::findOrFail($id);
+        $inscripcion->update($validated);
+
+        return response()->json([
+            'mensaje' => 'Inscripción actualizada',
+            'data' => $inscripcion,
+        ]);
+    }
+
+    public function show(string $id): JsonResponse
+    {
+        $inscripcion = InscripcionTaller::with('taller')->findOrFail($id);
         return response()->json($inscripcion);
     }
 
-    /**
-     * Ver detalle de una inscripción de externo
-     */
-    public function showExterno(string $id): JsonResponse
-    {
-        $inscripcion = InscripcionExternoTaller::with(['participante', 'taller'])->findOrFail($id);
-
-        return response()->json($inscripcion);
-    }
-
-    /**
-     * Cambiar estado de inscripción de estudiante
-     */
-    public function updateEstadoEstudiante(Request $request, string $id): JsonResponse
+    public function updateEstado(Request $request, string $id): JsonResponse
     {
         $request->validate([
-            'estado' => 'required|in:inscrito,completado,retirado',
+            'estado' => 'required|in:activo,completado,retirado',
         ]);
 
         $inscripcion = InscripcionTaller::findOrFail($id);
         $inscripcion->update(['estado' => $request->estado]);
 
-        return response()->json($inscripcion->load(['estudiante', 'taller']), 200);
+        return response()->json($inscripcion);
     }
 
-    /**
-     * Cambiar estado de inscripción de externo
-     */
-    public function updateEstadoExterno(Request $request, string $id): JsonResponse
-    {
-        $request->validate([
-            'estado' => 'required|in:inscrito,completado,retirado',
-        ]);
-
-        $inscripcion = InscripcionExternoTaller::findOrFail($id);
-        $inscripcion->update(['estado' => $request->estado]);
-
-        return response()->json($inscripcion->load(['participante', 'taller']), 200);
-    }
-
-    /**
-     * Eliminar inscripción de estudiante
-     */
-    public function destroyEstudiante(string $id): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
         $inscripcion = InscripcionTaller::findOrFail($id);
         $inscripcion->delete();
-
-        return response()->json(['message' => 'Inscripción eliminada'], 200);
+        return response()->json(['mensaje' => 'Inscripción eliminada']);
     }
 
-    /**
-     * Eliminar inscripción de externo
-     */
-    public function destroyExterno(string $id): JsonResponse
+    public function exportar(string $tallerId, Request $request)
     {
-        $inscripcion = InscripcionExternoTaller::findOrFail($id);
-        $inscripcion->delete();
+        $taller = Taller::findOrFail($tallerId);
 
-        return response()->json(['message' => 'Inscripción eliminada'], 200);
+        $inscripciones = InscripcionTaller::where('taller_id', $tallerId)
+            ->where('estado', 'activo')
+            ->get();
+
+        $formato = $request->get('formato', 'csv');
+
+        if ($formato === 'pdf') {
+            $rows = $inscripciones->map(function ($ins) {
+                return [
+                    'nombres' => $ins->nombres,
+                    'apellidos' => $ins->apellidos,
+                    'cedula' => $ins->cedula,
+                    'correo' => $ins->correo,
+                    'telefono' => $ins->telefono ?? '—',
+                    'fecha' => $ins->fecha_inscripcion ? \Carbon\Carbon::parse($ins->fecha_inscripcion)->format('d/m/Y') : '—',
+                    'pago' => $ins->pago_verificado ? 'Verificado' : 'Pendiente',
+                ];
+            });
+
+            $html = view('exports.participantes-taller', [
+                'taller' => $taller,
+                'rows' => $rows,
+            ])->render();
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+            return $pdf->download("participantes_{$taller->id}.pdf");
+        }
+
+        $csv = "Nombres,Apellidos,Cédula,Correo,Teléfono,Fecha Inscripción\n";
+        foreach ($inscripciones as $ins) {
+            $csv .= implode(',', [
+                '"' . str_replace('"', '""', $ins->nombres) . '"',
+                '"' . str_replace('"', '""', $ins->apellidos) . '"',
+                $ins->cedula,
+                $ins->correo,
+                $ins->telefono ?? '',
+                $ins->fecha_inscripcion ? \Carbon\Carbon::parse($ins->fecha_inscripcion)->format('d/m/Y') : '',
+            ]) . "\n";
+        }
+
+        return response()->json([
+            'csv' => $csv,
+            'filename' => "participantes_{$taller->nombre}.csv",
+            'total' => $inscripciones->count(),
+        ]);
     }
 }
