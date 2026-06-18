@@ -19,6 +19,7 @@ class AsignacionPersonal extends Model
     protected $fillable = [
         'persona_id',
         'reserva_podcast_id',
+        'reserva_radio_id',
         'rol_en_servicio',
     ];
 
@@ -30,5 +31,10 @@ class AsignacionPersonal extends Model
     public function reservaPodcast(): BelongsTo
     {
         return $this->belongsTo(ReservaPodcast::class, 'reserva_podcast_id');
+    }
+
+    public function reservaRadio(): BelongsTo
+    {
+        return $this->belongsTo(ReservaRadio::class, 'reserva_radio_id');
     }
 }

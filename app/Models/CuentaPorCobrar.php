@@ -24,6 +24,7 @@ class CuentaPorCobrar extends Model
         'servicio_produccion_id',
         'edicion_video_id',
         'alquiler_equipo_id',
+        'reserva_radio_id',
         'clase_extra_id',
         'asesoria_id',
         'solicitud_inscripcion_id',
@@ -74,6 +75,14 @@ class CuentaPorCobrar extends Model
     public function inscripcionTaller(): BelongsTo
     {
         return $this->belongsTo(InscripcionTaller::class, 'inscripcion_taller_id', 'id');
+    }
+
+    /**
+     * Reserva de radio asociada
+     */
+    public function reservaRadio(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Services\ReservaRadio::class, 'reserva_radio_id', 'id');
     }
 
     /**

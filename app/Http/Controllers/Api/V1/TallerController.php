@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTallerRequest;
 use App\Http\Requests\UpdateTallerRequest;
 use App\Models\Taller;
+use App\Services\InstructorConflictValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +14,9 @@ class TallerController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Taller::query()->with(['instructor', 'inscripciones']);
+        $query = Taller::query()->with(['instructor'])->withCount(['inscripciones as inscripciones_count' => function ($q) {
+            $q->where('estado', 'activo');
+        }]);
 
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
@@ -59,9 +62,25 @@ class TallerController extends Controller
         return response()->json($talleres);
     }
 
-    public function store(StoreTallerRequest $request): JsonResponse
+    public function store(StoreTallerRequest $request, InstructorConflictValidator $validator): JsonResponse
     {
-        $taller = Taller::create($request->validated());
+        $data = $request->validated();
+
+        $conflicto = $validator->validarTaller(
+            $data['instructor_id'],
+            $data['fecha'],
+            $data['hora_inicio'],
+            $data['hora_fin']
+        );
+
+        if (!$conflicto['valido']) {
+            return response()->json([
+                'mensaje' => 'Conflicto de horario detectado',
+                'errores' => $conflicto['errores'],
+            ], 409);
+        }
+
+        $taller = Taller::create($data);
         return response()->json(
             $taller->load(['instructor']),
             201
@@ -79,10 +98,38 @@ class TallerController extends Controller
         return response()->json($taller);
     }
 
-    public function update(UpdateTallerRequest $request, string $id): JsonResponse
+    public function update(UpdateTallerRequest $request, string $id, InstructorConflictValidator $validator): JsonResponse
     {
         $taller = Taller::findOrFail($id);
-        $taller->update($request->validated());
+        $data = $request->validated();
+
+        // Validar conflicto solo si se cambian datos de programación
+        $needsValidation = $request->has('fecha') || $request->has('hora_inicio')
+            || $request->has('hora_fin') || $request->has('instructor_id');
+
+        if ($needsValidation) {
+            $instructorId = $data['instructor_id'] ?? $taller->instructor_id;
+            $fecha = $data['fecha'] ?? $taller->fecha;
+            $horaInicio = $data['hora_inicio'] ?? $taller->hora_inicio;
+            $horaFin = $data['hora_fin'] ?? $taller->hora_fin;
+
+            $conflicto = $validator->validarTaller(
+                $instructorId,
+                $fecha instanceof \Carbon\Carbon ? $fecha->toDateString() : $fecha,
+                $horaInicio,
+                $horaFin,
+                $id
+            );
+
+            if (!$conflicto['valido']) {
+                return response()->json([
+                    'mensaje' => 'Conflicto de horario detectado',
+                    'errores' => $conflicto['errores'],
+                ], 409);
+            }
+        }
+
+        $taller->update($data);
         return response()->json($taller->load(['instructor']));
     }
 
@@ -95,7 +142,9 @@ class TallerController extends Controller
 
     public function estadisticas(string $id): JsonResponse
     {
-        $taller = Taller::withCount('inscripciones')->findOrFail($id);
+        $taller = Taller::withCount(['inscripciones as inscripciones_count' => function ($q) {
+            $q->where('estado', 'activo');
+        }])->findOrFail($id);
 
         return response()->json([
             'id' => $taller->id,

@@ -73,7 +73,7 @@ class Taller extends Model
 
     public function totalInscripciones(): int
     {
-        return $this->inscripciones()->count();
+        return $this->inscripciones()->where('estado', 'activo')->count();
     }
 
     public function capacidadDisponible(): int

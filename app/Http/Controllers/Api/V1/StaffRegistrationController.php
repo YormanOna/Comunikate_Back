@@ -222,8 +222,17 @@ class StaffRegistrationController extends Controller
             'solicitante' => [
                 'tipo' => $solicitud->esEstudiante() ? 'estudiante' : 'externo',
                 'datos' => $solicitud->esEstudiante()
-                    ? $solicitud->estudiante?->load('perfilEstudiante')?->toArray()
-                    : $solicitud->participanteExterno?->toArray(),
+                    ? array_merge(
+                        $solicitud->estudiante?->only([
+                            'id', 'tipo', 'cedula', 'nombres', 'apellidos',
+                            'correo', 'celular', 'ciudad_id',
+                        ]) ?? [],
+                        $solicitud->estudiante?->perfilEstudiante?->only([
+                            'fecha_nacimiento', 'ocupacion', 'direccion',
+                            'estado_civil', 'edad',
+                        ]) ?? [],
+                    )
+                    : $solicitud->participanteExterno?->toArray() ?? [],
             ],
             'curso' => $solicitud->cursoAbierto ? [
                 'id' => $solicitud->cursoAbierto->id,

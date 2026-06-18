@@ -9,6 +9,7 @@ use App\Models\HorarioDia;
 use App\Models\Clase;
 use App\Http\Requests\StoreCursoAbiertoRequest;
 use App\Http\Requests\UpdateCursoAbiertoRequest;
+use App\Services\InstructorConflictValidator;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -67,9 +68,30 @@ class CursoAbiertoController extends Controller
         ]);
     }
 
-    public function store(StoreCursoAbiertoRequest $request)
+    public function store(StoreCursoAbiertoRequest $request, InstructorConflictValidator $conflictValidator)
     {
         $data = $request->validated();
+
+        // Validar conflicto de instructor si hay datos de programación completos
+        if (!empty($data['docente_id']) && !empty($data['fecha_inicio']) && !empty($data['fecha_fin'])
+            && !empty($data['dias_semana']) && !empty($data['hora_inicio']) && !empty($data['hora_fin'])) {
+
+            $conflicto = $conflictValidator->validarCurso(
+                $data['docente_id'],
+                $data['fecha_inicio'],
+                $data['fecha_fin'],
+                $data['dias_semana'],
+                $data['hora_inicio'],
+                $data['hora_fin']
+            );
+
+            if (!$conflicto['valido']) {
+                return response()->json([
+                    'mensaje' => 'Conflicto de horario detectado',
+                    'errores' => $conflicto['errores'],
+                ], 409);
+            }
+        }
 
         // Si se enviaron horas, crear un Horario y vincularlo
         if (!empty($data['hora_inicio']) && !empty($data['hora_fin'])) {
@@ -155,10 +177,42 @@ class CursoAbiertoController extends Controller
         return response()->json(['data' => $curso]);
     }
 
-    public function update(UpdateCursoAbiertoRequest $request, $id)
+    public function update(UpdateCursoAbiertoRequest $request, $id, InstructorConflictValidator $conflictValidator)
     {
         $curso = CursoAbierto::findOrFail($id);
         $data = $request->validated();
+
+        // Validar conflicto de instructor si se están cambiando datos de programación
+        $docenteId = $data['docente_id'] ?? $curso->docente_id;
+        $fechaInicio = $data['fecha_inicio'] ?? ($curso->fecha_inicio ? $curso->fecha_inicio->toDateString() : null);
+        $fechaFin = $data['fecha_fin'] ?? ($curso->fecha_fin ? $curso->fecha_fin->toDateString() : null);
+        $diasSemana = $request->input('dias_semana', []);
+        $horaInicio = $data['hora_inicio'] ?? ($request->input('hora_inicio'));
+        $horaFin = $data['hora_fin'] ?? ($request->input('hora_fin'));
+
+        $hasScheduleChange = $request->has('docente_id') || $request->has('fecha_inicio')
+            || $request->has('fecha_fin') || $request->has('dias_semana')
+            || $request->has('hora_inicio') || $request->has('hora_fin');
+
+        if ($hasScheduleChange && $docenteId && $fechaInicio && $fechaFin
+            && !empty($diasSemana) && $horaInicio && $horaFin) {
+
+            $conflicto = $conflictValidator->validarCurso(
+                $docenteId,
+                $fechaInicio,
+                $fechaFin,
+                $diasSemana,
+                $horaInicio,
+                $horaFin
+            );
+
+            if (!$conflicto['valido']) {
+                return response()->json([
+                    'mensaje' => 'Conflicto de horario detectado',
+                    'errores' => $conflicto['errores'],
+                ], 409);
+            }
+        }
 
         // Si se enviaron horas, crear/actualizar Horario
         if (!empty($data['hora_inicio']) && !empty($data['hora_fin'])) {

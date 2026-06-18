@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\CuentaPorCobrar;
+use App\Models\InscripcionTaller;
+use App\Models\Services\ReservaAula;
+use App\Models\Services\ReservaPodcast;
+use App\Models\Services\AlquilerEquipo;
 use App\Models\TransaccionIngreso;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -89,6 +93,129 @@ class FinanceController extends Controller
             'datos' => $cuenta,
             'transacciones' => $transacciones
         ]);
+    }
+
+    public function getResumen(): JsonResponse
+    {
+        $stats = Cache::remember('finance.resumen', now()->addMinutes(5), function () {
+            $base = CuentaPorCobrar::whereIn('estado', ['pendiente', 'abonado']);
+
+            $saldoDeudor = fn($q) => $q->get()->sum(fn($c) => $c->monto_total - $c->monto_abonado);
+
+            // Talleres sin cuenta por cobrar
+            // Talleres sin cuenta por cobrar
+            $talleresIdsConCuenta = CuentaPorCobrar::whereNotNull('inscripcion_taller_id')->pluck('inscripcion_taller_id')->toArray();
+            $talleresSinCuenta = InscripcionTaller::whereNotIn('id', $talleresIdsConCuenta)
+                ->where('estado', 'activo')
+                ->get();
+
+            $totalTalleresSinCuenta = $talleresSinCuenta->sum(fn($t) => (float) ($t->monto_pagado ?? $t->precio_pagado ?? 0));
+            $countTalleresSinCuenta = $talleresSinCuenta->count();
+
+            $talleresItems = [];
+            foreach ($talleresSinCuenta as $t) {
+                $talleresItems[] = [
+                    'id' => $t->id,
+                    'inscripcion_taller_id' => $t->id,
+                    'monto_total' => (float) ($t->monto_pagado ?? $t->precio_pagado ?? 0),
+                    'monto_abonado' => 0,
+                    'saldo_pendiente' => (float) ($t->monto_pagado ?? $t->precio_pagado ?? 0),
+                    'estado' => 'pendiente',
+                    'inscripcion_taller' => [
+                        'taller' => $t->taller ? ['nombre' => $t->taller->nombre] : null,
+                    ],
+                    'persona_nombre' => trim(($t->nombres ?? '') . ' ' . ($t->apellidos ?? '')),
+                ];
+            }
+
+            // Servicios sin cuenta por cobrar (aulas, podcast, equipos)
+            $servicioIds = CuentaPorCobrar::whereNotNull('reserva_aula_id')->pluck('reserva_aula_id')->toArray();
+            $aulasSinCuenta = ReservaAula::whereNotIn('id', $servicioIds)
+                ->whereIn('estado', ['reservado', 'confirmado', 'en_progreso'])
+                ->get();
+            $totalAulas = 0;
+            $serviciosItems = [];
+            foreach ($aulasSinCuenta as $r) {
+                $monto = (float) ($r->precio_total ?? 0);
+                $totalAulas += $monto;
+                $serviciosItems[] = [
+                    'id' => $r->id,
+                    'tipo' => 'aula',
+                    'monto_total' => $monto,
+                    'monto_abonado' => 0,
+                    'saldo_pendiente' => $monto,
+                    'estado' => 'pendiente',
+                    'nombre_servicio' => $r->aula?->nombre ?? 'Aula',
+                    'persona_nombre' => $r->persona ? trim(($r->persona->nombres ?? '') . ' ' . ($r->persona->apellidos ?? '')) : ($r->clienteExterno?->nombres ?? ''),
+                ];
+            }
+
+            $podcastIds = CuentaPorCobrar::whereNotNull('reserva_podcast_id')->pluck('reserva_podcast_id')->toArray();
+            $podcastSinCuenta = ReservaPodcast::whereNotIn('id', $podcastIds)
+                ->whereIn('estado', ['reservado', 'confirmado', 'en_progreso'])
+                ->get();
+            $totalPodcast = 0;
+            foreach ($podcastSinCuenta as $r) {
+                $monto = (float) ($r->precio_total ?? 0);
+                $totalPodcast += $monto;
+                $serviciosItems[] = [
+                    'id' => $r->id,
+                    'tipo' => 'podcast',
+                    'monto_total' => $monto,
+                    'monto_abonado' => 0,
+                    'saldo_pendiente' => $monto,
+                    'estado' => 'pendiente',
+                    'nombre_servicio' => 'Podcast',
+                    'persona_nombre' => $r->persona ? trim(($r->persona->nombres ?? '') . ' ' . ($r->persona->apellidos ?? '')) : ($r->clienteExterno?->nombres ?? ''),
+                ];
+            }
+
+            $equipoIds = CuentaPorCobrar::whereNotNull('alquiler_equipo_id')->pluck('alquiler_equipo_id')->toArray();
+            $equiposSinCuenta = AlquilerEquipo::whereNotIn('id', $equipoIds)
+                ->whereIn('estado', ['pendiente', 'activo', 'entregado'])
+                ->get();
+            $totalEquipos = 0;
+            foreach ($equiposSinCuenta as $r) {
+                $monto = (float) ($r->precio_total ?? 0);
+                $totalEquipos += $monto;
+                $serviciosItems[] = [
+                    'id' => $r->id,
+                    'tipo' => 'equipo',
+                    'monto_total' => $monto,
+                    'monto_abonado' => 0,
+                    'saldo_pendiente' => $monto,
+                    'estado' => 'pendiente',
+                    'nombre_servicio' => $r->equipo?->nombre ?? 'Equipo',
+                    'persona_nombre' => $r->persona ? trim(($r->persona->nombres ?? '') . ' ' . ($r->persona->apellidos ?? '')) : ($r->clienteExterno?->nombres ?? ''),
+                ];
+            }
+
+            return [
+                'total_pendiente' => $saldoDeudor(clone $base),
+                'total_cobrado' => DB::table('finance.transacciones_ingreso')->where('estado_verificacion', 'aprobado')->sum('monto'),
+                'pendientes_verificacion' => TransaccionIngreso::where('estado_verificacion', 'pendiente')->count(),
+                'cuentas_con_deuda' => CuentaPorCobrar::whereIn('estado', ['pendiente', 'abonado'])->count(),
+                'distribucion' => [
+                    'cursos' => $saldoDeudor((clone $base)->where(fn($q) => $q->whereNotNull('matricula_id')->orWhereNotNull('solicitud_inscripcion_id'))),
+                    'talleres' => $saldoDeudor((clone $base)->whereNotNull('inscripcion_taller_id')),
+                    'servicios' => $saldoDeudor((clone $base)->where(fn($q) => $q->whereNotNull('reserva_aula_id')->orWhereNotNull('reserva_podcast_id')->orWhereNotNull('alquiler_equipo_id'))),
+                ],
+                'sin_cuenta' => [
+                    'talleres' => [
+                        'total' => $totalTalleresSinCuenta,
+                        'count' => $countTalleresSinCuenta,
+                        'items' => $talleresItems,
+                    ],
+                    'servicios' => [
+                        'total' => $totalAulas + $totalPodcast + $totalEquipos,
+                        'count' => count($aulasSinCuenta) + count($podcastSinCuenta) + count($equiposSinCuenta),
+                        'items' => $serviciosItems,
+                    ],
+                ],
+            ];
+        });
+
+        return response()->json(['datos' => $stats]);
     }
 
     public function registrarPago(Request $request): JsonResponse
@@ -185,26 +312,4 @@ class FinanceController extends Controller
         ]);
     }
 
-    public function getResumen(): JsonResponse
-    {
-        $stats = Cache::remember('finance.resumen', now()->addMinutes(5), function () {
-            $base = CuentaPorCobrar::whereIn('estado', ['pendiente', 'abonado']);
-
-            $saldoDeudor = fn($q) => $q->get()->sum(fn($c) => $c->monto_total - $c->monto_abonado);
-
-            return [
-                'total_pendiente' => $saldoDeudor(clone $base),
-                'total_cobrado' => DB::table('finance.transacciones_ingreso')->where('estado_verificacion', 'aprobado')->sum('monto'),
-                'pendientes_verificacion' => TransaccionIngreso::where('estado_verificacion', 'pendiente')->count(),
-                'cuentas_con_deuda' => CuentaPorCobrar::whereIn('estado', ['pendiente', 'abonado'])->count(),
-                'distribucion' => [
-                    'cursos' => $saldoDeudor((clone $base)->where(fn($q) => $q->whereNotNull('matricula_id')->orWhereNotNull('solicitud_inscripcion_id'))),
-                    'talleres' => $saldoDeudor((clone $base)->whereNotNull('inscripcion_taller_id')),
-                    'servicios' => $saldoDeudor((clone $base)->where(fn($q) => $q->whereNotNull('reserva_aula_id')->orWhereNotNull('reserva_podcast_id')->orWhereNotNull('alquiler_equipo_id'))),
-                ],
-            ];
-        });
-
-        return response()->json(['datos' => $stats]);
-    }
 }

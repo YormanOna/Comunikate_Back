@@ -41,10 +41,13 @@ use App\Http\Controllers\Api\V1\AlquilerEquipoController;
 use App\Http\Controllers\Api\V1\PaquetePodcastController;
 use App\Http\Controllers\Api\V1\ReservaPodcastController;
 use App\Http\Controllers\Api\V1\TrabajoEdicionController;
+use App\Http\Controllers\Api\V1\TarifaRadioController;
+use App\Http\Controllers\Api\V1\ReservaRadioController;
 use App\Http\Controllers\Api\V1\InstructorPortalController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\SecretariaDashboardController;
 use App\Http\Controllers\Api\V1\SecretariaFinanceController;
+use App\Http\Controllers\Api\V1\AgendaController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -95,6 +98,10 @@ Route::prefix('v1')->group(function () {
     // Cursos abiertos (público, solo lectura para matrícula)
     Route::get('cursos-abiertos', [CursoAbiertoController::class, 'index'])
         ->name('public.cursos-abiertos.index');
+
+    // Talleres (público, solo lectura para matrícula)
+    Route::get('talleres', [TallerController::class, 'index'])
+        ->name('public.talleres.index');
 
     // ========================================================================
     // PUBLIC ROUTES - CERTIFICADOS (VERIFICACIÓN PÚBLICA)
@@ -366,6 +373,28 @@ Route::prefix('v1')->group(function () {
             Route::post('{id}/cobro', [TrabajoEdicionController::class, 'registrarCobro'])->name('trabajos-edicion.cobro');
         });
 
+        // Servicios - Radio
+        Route::prefix('servicios/tarifas-radio')->group(function () {
+            Route::get('/', [TarifaRadioController::class, 'index'])->name('tarifas-radio.index');
+            Route::post('/', [TarifaRadioController::class, 'store'])->name('tarifas-radio.store');
+            Route::get('{id}', [TarifaRadioController::class, 'show'])->name('tarifas-radio.show');
+            Route::put('{id}', [TarifaRadioController::class, 'update'])->name('tarifas-radio.update');
+            Route::delete('{id}', [TarifaRadioController::class, 'destroy'])->name('tarifas-radio.destroy');
+        });
+
+        Route::prefix('servicios/reservas-radio')->group(function () {
+            Route::get('/', [ReservaRadioController::class, 'index'])->name('reservas-radio.index');
+            Route::post('/', [ReservaRadioController::class, 'store'])->name('reservas-radio.store');
+            Route::get('disponibles', [ReservaRadioController::class, 'disponibles'])->name('reservas-radio.disponibles');
+            Route::get('historial', [ReservaRadioController::class, 'historial'])->name('reservas-radio.historial');
+            Route::get('{id}', [ReservaRadioController::class, 'show'])->name('reservas-radio.show');
+            Route::put('{id}', [ReservaRadioController::class, 'update'])->name('reservas-radio.update');
+            Route::post('{id}/estado', [ReservaRadioController::class, 'cambiarEstado'])->name('reservas-radio.estado');
+            Route::post('{id}/operador', [ReservaRadioController::class, 'asignarOperador'])->name('reservas-radio.operador');
+            Route::post('{id}/pago', [ReservaRadioController::class, 'registrarPago'])->name('reservas-radio.pago');
+            Route::delete('{id}', [ReservaRadioController::class, 'destroy'])->name('reservas-radio.destroy');
+        });
+
         // MATRICULAS
         Route::prefix('matriculas')->group(function () {
             Route::get('/', [MatriculaController::class, 'index'])->name('matriculas.index');
@@ -445,7 +474,6 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::prefix('talleres/{taller_id}/inscripciones')->group(function () {
-            Route::get('/', [InscripcionTallerController::class, 'index'])->name('inscripciones-talleres.index');
             Route::post('/', [InscripcionTallerController::class, 'store'])->name('inscripciones-talleres.store');
         });
 
@@ -528,6 +556,15 @@ Route::prefix('reports')->group(function () {
 });
 
         // ========================================================================
+        // AGENDA UNIFICADA
+        // ========================================================================
+        Route::prefix('agenda')->group(function () {
+            Route::get('/', [AgendaController::class, 'index'])->name('agenda.index');
+            Route::get('exportar/pdf', [AgendaController::class, 'exportarPDF'])->name('agenda.exportar-pdf');
+            Route::get('{tipo_evento}/{referencia_id}', [AgendaController::class, 'show'])->name('agenda.show');
+        });
+
+        // ========================================================================
         // CERTIFICADOS (GESTIÓN ADMIN)
         // ========================================================================
         Route::prefix('certificados')->group(function () {
@@ -559,6 +596,18 @@ Route::prefix('reports')->group(function () {
     });
 
     // ========================================================================
+    // FINANZAS (ADMIN)
+    // ========================================================================
+    Route::middleware(['auth:sanctum', 'role:Administrador'])->prefix('finanzas')->group(function () {
+        Route::get('resumen', [FinanceController::class, 'getResumen'])->name('finanzas.resumen');
+        Route::get('cuentas', [FinanceController::class, 'getCuentas'])->name('finanzas.cuentas');
+        Route::get('cuentas/{id}', [FinanceController::class, 'getCuentaDetalle'])->name('finanzas.cuentas.detalle');
+        Route::post('pagos', [FinanceController::class, 'registrarPago'])->name('finanzas.pagos');
+        Route::get('transacciones', [FinanceController::class, 'getTransacciones'])->name('finanzas.transacciones');
+        Route::post('transacciones/{id}/verificar', [FinanceController::class, 'verificarTransaccion'])->name('finanzas.transacciones.verificar');
+    });
+
+    // ========================================================================
     // NOTIFICACIONES (compartido entre roles)
     // ========================================================================
     Route::middleware('auth:sanctum')->prefix('academic')->group(function () {
@@ -574,6 +623,7 @@ Route::prefix('reports')->group(function () {
         Route::get('/', [TallerController::class, 'index']);
         Route::get('{id}', [TallerController::class, 'show']);
         Route::get('{id}/estadisticas', [TallerController::class, 'estadisticas']);
+        Route::get('{taller_id}/inscripciones', [InscripcionTallerController::class, 'index']);
     });
 
     Route::middleware(['auth:sanctum', 'role:Administrador|Instructor'])->prefix('academic/talleres/{taller_id}/asistencias')->group(function () {
@@ -666,6 +716,25 @@ Route::prefix('reports')->group(function () {
             Route::get('alquileres/{id}', [AlquilerEquipoController::class, 'show'])->name('secretaria.alquileres-equipos.show');
             Route::post('alquileres/{id}/entregar', [AlquilerEquipoController::class, 'entregar'])->name('secretaria.alquileres-equipos.entregar');
             Route::post('alquileres/{id}/devolver', [AlquilerEquipoController::class, 'devolver'])->name('secretaria.alquileres-equipos.devolver');
+        });
+
+        // Servicios - Radio
+        Route::prefix('servicios/tarifas-radio')->group(function () {
+            Route::get('/', [TarifaRadioController::class, 'index'])->name('secretaria.tarifas-radio.index');
+            Route::get('{id}', [TarifaRadioController::class, 'show'])->name('secretaria.tarifas-radio.show');
+        });
+
+        Route::prefix('servicios/reservas-radio')->group(function () {
+            Route::get('/', [ReservaRadioController::class, 'index'])->name('secretaria.reservas-radio.index');
+            Route::post('/', [ReservaRadioController::class, 'store'])->name('secretaria.reservas-radio.store');
+            Route::get('disponibles', [ReservaRadioController::class, 'disponibles'])->name('secretaria.reservas-radio.disponibles');
+            Route::get('historial', [ReservaRadioController::class, 'historial'])->name('secretaria.reservas-radio.historial');
+            Route::get('{id}', [ReservaRadioController::class, 'show'])->name('secretaria.reservas-radio.show');
+            Route::put('{id}', [ReservaRadioController::class, 'update'])->name('secretaria.reservas-radio.update');
+            Route::post('{id}/estado', [ReservaRadioController::class, 'cambiarEstado'])->name('secretaria.reservas-radio.estado');
+            Route::post('{id}/operador', [ReservaRadioController::class, 'asignarOperador'])->name('secretaria.reservas-radio.operador');
+            Route::post('{id}/pago', [ReservaRadioController::class, 'registrarPago'])->name('secretaria.reservas-radio.pago');
+            Route::delete('{id}', [ReservaRadioController::class, 'destroy'])->name('secretaria.reservas-radio.destroy');
         });
 
         // Certificados

@@ -71,6 +71,10 @@ class EstudianteController extends Controller
                     'perfil_estudiante' => $p->perfilEstudiante ? [
                         'fecha_nacimiento' => $p->perfilEstudiante->fecha_nacimiento?->format('Y-m-d'),
                         'notas_internas' => $p->perfilEstudiante->notas_internas,
+                        'ocupacion' => $p->perfilEstudiante->ocupacion,
+                        'direccion' => $p->perfilEstudiante->direccion,
+                        'estado_civil' => $p->perfilEstudiante->estado_civil,
+                        'edad' => $p->perfilEstudiante->edad,
                     ] : null,
                 ];
             });
@@ -144,6 +148,69 @@ class EstudianteController extends Controller
             });
 
         $todos = $internos->concat($clientesData);
+
+        // Agregar estudiantes de talleres (inscripciones_taller)
+        $tallerEstudiantes = collect();
+        $inscripcionesTaller = \App\Models\InscripcionTaller::query()
+            ->whereNotNull('nombres')
+            ->whereIn('estado', ['activo', 'completado'])
+            ->with('taller')
+            ->orderBy('nombres')
+            ->get();
+
+        $agrupadosTaller = $inscripcionesTaller->groupBy(function ($ins) {
+            if (!empty($ins->cedula)) return 'cedula:' . $ins->cedula;
+            return 'nombre:' . mb_strtolower(trim($ins->nombres . ' ' . $ins->apellidos));
+        });
+
+        foreach ($agrupadosTaller as $grupo) {
+            $primera = $grupo->first();
+            $totalTalleres = $grupo->count();
+            $totalPagado = $grupo->sum(fn($ins) => $ins->monto_pagado ?? 0);
+            $totalPrecio = $grupo->sum(fn($ins) => $ins->taller->precio ?? 0);
+            $saldoPendiente = max(0, $totalPrecio - $totalPagado);
+            $todosVerificados = $grupo->every(fn($ins) => $ins->pago_verificado);
+
+            if ($totalPrecio <= 0) {
+                $estadoPago = 'ninguno';
+            } elseif ($saldoPendiente <= 0 && $todosVerificados) {
+                $estadoPago = 'al_dia';
+            } elseif ($totalPagado > 0) {
+                $estadoPago = 'abonado';
+            } else {
+                $estadoPago = 'deudor';
+            }
+
+            $tallerEstudiantes->push([
+                'id' => $primera->id,
+                'tipo' => 'estudiante',
+                'nombres' => $primera->nombres,
+                'apellidos' => $primera->apellidos ?? '',
+                'cedula' => $primera->cedula,
+                'correo' => $primera->correo,
+                'celular' => $primera->telefono,
+                'ciudad' => null,
+                'es_activo' => true,
+                'total_cursos' => $totalTalleres,
+                'estado_pago' => $estadoPago,
+                'saldo_pendiente' => $saldoPendiente,
+                'perfil_estudiante' => [
+                    'edad' => $primera->edad,
+                    'ocupacion' => $primera->ocupacion,
+                    'direccion' => $primera->direccion,
+                    'estado_civil' => $primera->estado_civil,
+                    'fecha_nacimiento' => $primera->fecha_nacimiento,
+                    'notas_internas' => null,
+                ],
+            ]);
+        }
+
+        // Mezclar con estudiantes existentes, evitando duplicados por cédula
+        $cedulasExistentes = $todos->pluck('cedula')->filter()->toArray();
+        $tallerNuevos = $tallerEstudiantes->reject(function ($te) use ($cedulasExistentes) {
+            return !empty($te['cedula']) && in_array($te['cedula'], $cedulasExistentes);
+        });
+        $todos = $todos->concat($tallerNuevos->values());
 
         if ($request->filled('buscar')) {
             $buscar = mb_strtolower($request->buscar);
@@ -1050,7 +1117,7 @@ class EstudianteController extends Controller
 
         $formato = $request->input('formato', 'csv');
         $camposSeleccionados = $request->input('campos', [
-            'nombres', 'apellidos', 'cedula', 'correo', 'celular', 'total_cursos', 'estado_pago', 'saldo_pendiente'
+            'nombres', 'apellidos', 'cedula', 'correo', 'celular', 'edad', 'direccion', 'ocupacion', 'estado_civil', 'total_cursos', 'estado_pago', 'saldo_pendiente'
         ]);
         $ids = $request->input('ids');
 
@@ -1174,6 +1241,51 @@ class EstudianteController extends Controller
         });
 
         $estudiantes = $estudiantes->concat($clientesData);
+
+        // Agregar estudiantes de talleres al export
+        $tallerExp = \App\Models\InscripcionTaller::query()
+            ->whereNotNull('nombres')
+            ->whereIn('estado', ['activo', 'completado'])
+            ->with('taller')
+            ->get()
+            ->groupBy(function ($ins) {
+                if (!empty($ins->cedula)) return 'cedula:' . $ins->cedula;
+                return 'nombre:' . mb_strtolower(trim($ins->nombres . ' ' . $ins->apellidos));
+            })
+            ->map(function ($grupo) {
+                $p = $grupo->first();
+                $totalPagado = $grupo->sum(fn($ins) => $ins->monto_pagado ?? 0);
+                $totalPrecio = $grupo->sum(fn($ins) => $ins->taller->precio ?? 0);
+                $saldo = max(0, $totalPrecio - $totalPagado);
+                $todosVer = $grupo->every(fn($ins) => $ins->pago_verificado);
+                $estadoPago = 'ninguno';
+                if ($totalPrecio > 0) {
+                    if ($saldo <= 0 && $todosVer) $estadoPago = 'al_dia';
+                    elseif ($totalPagado > 0) $estadoPago = 'abonado';
+                    else $estadoPago = 'deudor';
+                }
+                return [
+                    'id' => $p->id,
+                    'nombres' => $p->nombres,
+                    'apellidos' => $p->apellidos ?? '',
+                    'cedula' => $p->cedula,
+                    'correo' => $p->correo,
+                    'celular' => $p->telefono,
+                    'total_cursos' => $grupo->count(),
+                    'estado_pago' => $estadoPago,
+                    'saldo_pendiente' => $saldo,
+                    'edad' => $p->edad,
+                    'direccion' => $p->direccion,
+                    'ocupacion' => $p->ocupacion,
+                    'estado_civil' => $p->estado_civil,
+                ];
+            });
+
+        $cedulasExp = $estudiantes->pluck('cedula')->filter()->toArray();
+        $tallerNuevos = $tallerExp->reject(function ($te) use ($cedulasExp) {
+            return !empty($te['cedula']) && in_array($te['cedula'], $cedulasExp);
+        });
+        $estudiantes = $estudiantes->concat($tallerNuevos->values());
 
         if ($request->filled('estado_pago') && $request->estado_pago !== 'todos') {
             $estado = $request->estado_pago;
