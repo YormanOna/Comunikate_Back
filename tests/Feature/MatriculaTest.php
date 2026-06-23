@@ -29,7 +29,7 @@ class MatriculaTest extends TestCase
     {
         Matricula::factory()->count(5)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/matriculas');
+        $response = $this->authenticatedGet('/api/academic/matriculas');
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -56,7 +56,7 @@ class MatriculaTest extends TestCase
         Matricula::factory()->count(3)->activa()->create();
         Matricula::factory()->count(2)->completada()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/matriculas?activas=true');
+        $response = $this->authenticatedGet('/api/academic/matriculas?activas=true');
 
         $response->assertStatus(200);
         
@@ -74,7 +74,7 @@ class MatriculaTest extends TestCase
         Matricula::factory()->count(2)->activa()->create();
         Matricula::factory()->count(2)->completada()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/matriculas?estado=activo');
+        $response = $this->authenticatedGet('/api/academic/matriculas?estado=activo');
 
         $response->assertStatus(200);
         
@@ -93,7 +93,7 @@ class MatriculaTest extends TestCase
         Matricula::factory()->count(3)->create(['estudiante_id' => $estudianteId]);
         Matricula::factory()->create();
 
-        $response = $this->authenticatedGet("/api/v1/academic/matriculas?estudiante_id={$estudianteId}");
+        $response = $this->authenticatedGet("/api/academic/matriculas?estudiante_id={$estudianteId}");
 
         $response->assertStatus(200);
         
@@ -121,7 +121,7 @@ class MatriculaTest extends TestCase
             'observaciones' => 'Test matrícula',
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/matriculas', $data);
+        $response = $this->authenticatedPost('/api/academic/matriculas', $data);
 
         $response->assertStatus(201)
                  ->assertJsonStructure([
@@ -141,7 +141,7 @@ class MatriculaTest extends TestCase
     {
         $matricula = Matricula::factory()->create();
 
-        $response = $this->authenticatedGet("/api/v1/academic/matriculas/{$matricula->id}");
+        $response = $this->authenticatedGet("/api/academic/matriculas/{$matricula->id}");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -163,7 +163,7 @@ class MatriculaTest extends TestCase
             'observaciones' => 'Curso completado satisfactoriamente',
         ];
 
-        $response = $this->authenticatedPut("/api/v1/academic/matriculas/{$matricula->id}", $data);
+        $response = $this->authenticatedPut("/api/academic/matriculas/{$matricula->id}", $data);
 
         $response->assertStatus(200);
 
@@ -180,7 +180,7 @@ class MatriculaTest extends TestCase
     {
         $matricula = Matricula::factory()->create();
 
-        $response = $this->authenticatedDelete("/api/v1/academic/matriculas/{$matricula->id}");
+        $response = $this->authenticatedDelete("/api/academic/matriculas/{$matricula->id}");
 
         $response->assertStatus(200);
 
@@ -195,7 +195,7 @@ class MatriculaTest extends TestCase
         $matricula = Matricula::factory()->create();
         Nota::factory()->count(4)->create(['matricula_id' => $matricula->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/matriculas/{$matricula->id}/notas");
+        $response = $this->authenticatedGet("/api/academic/matriculas/{$matricula->id}/notas");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -219,7 +219,7 @@ class MatriculaTest extends TestCase
         Nota::factory()->aprobada()->create(['matricula_id' => $matricula->id, 'modulo_id' => $modulo1->id]);
         Nota::factory()->excelente()->create(['matricula_id' => $matricula->id, 'modulo_id' => $modulo2->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/matriculas/{$matricula->id}/calificaciones");
+        $response = $this->authenticatedGet("/api/academic/matriculas/{$matricula->id}/calificaciones");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -249,7 +249,7 @@ class MatriculaTest extends TestCase
         $matricula = Matricula::factory()->create();
         CambioHorario::factory()->count(2)->create(['matricula_origen_id' => $matricula->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/matriculas/{$matricula->id}/cambios-horario");
+        $response = $this->authenticatedGet("/api/academic/matriculas/{$matricula->id}/cambios-horario");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -268,7 +268,7 @@ class MatriculaTest extends TestCase
     {
         Matricula::factory()->count(25)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/matriculas?per_page=10');
+        $response = $this->authenticatedGet('/api/academic/matriculas?per_page=10');
 
         $response->assertStatus(200);
         

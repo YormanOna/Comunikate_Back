@@ -117,6 +117,7 @@ class RegistrationStateService
                     'exito' => true,
                     'mensaje' => 'Solicitud aprobada correctamente. Matrícula creada.',
                     'matricula_id' => $matricula->id,
+                    'cuenta_cobrar_id' => null,
                     'lineas_pago_ids' => collect($lineasPago)->pluck('id')->toArray(),
                     'requiere_pago_inicial' => count($lineasPago) > 0,
                 ];
@@ -227,6 +228,7 @@ class RegistrationStateService
                 'tipo_pago' => $solicitud->tipo_pago,
                 'voucher_url' => $solicitud->archivo_comprobante_url,
                 'estado' => 'activo',
+                'precio_total_legacy' => 0,
                 'solicitud_inscripcion_id' => $solicitud->id,
             ]);
 

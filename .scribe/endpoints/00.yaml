@@ -5,7 +5,7 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/v1/auth/iniciar-sesion
+    uri: api/auth/iniciar-sesion
     metadata:
       custom: []
       groupName: Endpoints
@@ -60,7 +60,7 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/v1/auth/cerrar-sesion
+    uri: api/auth/cerrar-sesion
     metadata:
       custom: []
       groupName: Endpoints
@@ -91,7 +91,7 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/perfil
+    uri: api/perfil
     metadata:
       custom: []
       groupName: Endpoints
@@ -131,7 +131,7 @@ endpoints:
     custom: []
     httpMethods:
       - PUT
-    uri: api/v1/perfil
+    uri: api/perfil
     metadata:
       custom: []
       groupName: Endpoints
@@ -222,7 +222,7 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/personas/estudiantes
+    uri: api/personas/estudiantes
     metadata:
       custom: []
       groupName: Endpoints
@@ -262,7 +262,7 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/v1/personas/estudiantes
+    uri: api/personas/estudiantes
     metadata:
       custom: []
       groupName: Endpoints
@@ -388,7 +388,7 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: 'api/v1/personas/estudiantes/{id}'
+    uri: 'api/personas/estudiantes/{id}'
     metadata:
       custom: []
       groupName: Endpoints
@@ -440,7 +440,7 @@ endpoints:
     custom: []
     httpMethods:
       - PUT
-    uri: 'api/v1/personas/estudiantes/{id}'
+    uri: 'api/personas/estudiantes/{id}'
     metadata:
       custom: []
       groupName: Endpoints
@@ -590,7 +590,7 @@ endpoints:
     custom: []
     httpMethods:
       - DELETE
-    uri: 'api/v1/personas/estudiantes/{id}'
+    uri: 'api/personas/estudiantes/{id}'
     metadata:
       custom: []
       groupName: Endpoints

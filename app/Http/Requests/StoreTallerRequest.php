@@ -22,6 +22,7 @@ class StoreTallerRequest extends FormRequest
             'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
             'instructor_id' => 'required|uuid|exists:personas,id',
             'modalidad' => 'required|in:presencial,virtual',
+            'ciudad_id' => 'nullable|integer|exists:ciudades,id',
             'capacidad_maxima' => 'required|integer|min:1|max:500',
             'precio' => 'required|numeric|min:0',
             'estado' => 'sometimes|in:pendiente,confirmado,completado,cancelado',

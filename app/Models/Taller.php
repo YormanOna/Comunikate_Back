@@ -22,6 +22,7 @@ class Taller extends Model
         'hora_inicio',
         'hora_fin',
         'instructor_id',
+        'ciudad_id',
         'modalidad',
         'capacidad_maxima',
         'precio',
@@ -40,6 +41,11 @@ class Taller extends Model
     public function instructor(): BelongsTo
     {
         return $this->belongsTo(Persona::class, 'instructor_id');
+    }
+
+    public function ciudad(): BelongsTo
+    {
+        return $this->belongsTo(Ciudad::class);
     }
 
     public function inscripciones(): HasMany

@@ -372,25 +372,25 @@ estudiantes_inscritos   → ❌ NOT IN FILLABLE (calculated from matriculas)
 
 **Endpoints**:
 ```
-GET  /api/v1/staff/solicitudes-inscripcion
+GET  /api/staff/solicitudes-inscripcion
      → List all pending registrations with filters
      → Staff can see curso, solicitante, monto, estado
 
-GET  /api/v1/staff/solicitudes-inscripcion/{id}
+GET  /api/staff/solicitudes-inscripcion/{id}
      → View full request details including payment proof
 
-POST /api/v1/staff/solicitudes-inscripcion/{id}/validar
+POST /api/staff/solicitudes-inscripcion/{id}/validar
      → Approve request (ValidateRegistrationRequest)
      → Creates Matricula + CuentaPorCobrar
      → Updates SolicitudInscripcion estado to matricula_creada
      → Updates curso.estudiantes_inscritos += 1
 
-POST /api/v1/staff/solicitudes-inscripcion/{id}/rechazar
+POST /api/staff/solicitudes-inscripcion/{id}/rechazar
      → Reject request (RejectRegistrationRequest)
      → Updates estado to rechazado
      → Stores motivo_rechazo
 
-POST /api/v1/staff/solicitudes-inscripcion/{id}/cancelar
+POST /api/staff/solicitudes-inscripcion/{id}/cancelar
      → Cancel request (from pendiente_validacion only)
 ```
 
@@ -413,7 +413,7 @@ POST /api/v1/staff/solicitudes-inscripcion/{id}/cancelar
 ### 4.1 Enrollment Creation Process
 
 **Step 1: Student Registration Request**
-- **Endpoint**: `POST /api/v1/registrations` (PUBLIC)
+- **Endpoint**: `POST /api/registrations` (PUBLIC)
 - **Form**: `StoreRegistrationRequest`
 - **Inputs**:
   - Option A (Registered Student): `persona_id` only
@@ -441,7 +441,7 @@ POST /api/v1/staff/solicitudes-inscripcion/{id}/cancelar
 **Step 4: Staff Approval**
 - Staff receives notification
 - Reviews: student info, course, payment proof, amount
-- Approves via `POST /api/v1/staff/solicitudes-inscripcion/{id}/validar`
+- Approves via `POST /api/staff/solicitudes-inscripcion/{id}/validar`
 
 **Step 5: Automatic Matricula Creation**
 - `RegistrationStateService::crearMatricula()`:
@@ -482,19 +482,19 @@ POST /api/v1/staff/solicitudes-inscripcion/{id}/cancelar
 ### 5.1 Course Management Routes
 
 ```
-GET    /api/v1/academic/catalogos-cursos
-POST   /api/v1/academic/catalogos-cursos
-GET    /api/v1/academic/catalogos-cursos/{id}
-PUT    /api/v1/academic/catalogos-cursos/{id}
-DELETE /api/v1/academic/catalogos-cursos/{id}
-GET    /api/v1/catalogo-cursos/disponibles          [PUBLIC]
-POST   /api/v1/academic/catalogos-cursos/upload-imagen
+GET    /api/academic/catalogos-cursos
+POST   /api/academic/catalogos-cursos
+GET    /api/academic/catalogos-cursos/{id}
+PUT    /api/academic/catalogos-cursos/{id}
+DELETE /api/academic/catalogos-cursos/{id}
+GET    /api/catalogo-cursos/disponibles          [PUBLIC]
+POST   /api/academic/catalogos-cursos/upload-imagen
 
-GET    /api/v1/academic/cursos-abiertos
-POST   /api/v1/academic/cursos-abiertos
-GET    /api/v1/academic/cursos-abiertos/{id}
-PUT    /api/v1/academic/cursos-abiertos/{id}
-DELETE /api/v1/academic/cursos-abiertos/{id}
+GET    /api/academic/cursos-abiertos
+POST   /api/academic/cursos-abiertos
+GET    /api/academic/cursos-abiertos/{id}
+PUT    /api/academic/cursos-abiertos/{id}
+DELETE /api/academic/cursos-abiertos/{id}
 ```
 
 **CatalogoCursoController Methods**:
@@ -509,14 +509,14 @@ DELETE /api/v1/academic/cursos-abiertos/{id}
 ### 5.2 Enrollment Management Routes
 
 ```
-GET    /api/v1/academic/matriculas
-POST   /api/v1/academic/matriculas
-GET    /api/v1/academic/matriculas/{id}
-PUT    /api/v1/academic/matriculas/{id}
-DELETE /api/v1/academic/matriculas/{id}
-GET    /api/v1/academic/matriculas/{id}/notas
-GET    /api/v1/academic/matriculas/{id}/calificaciones
-GET    /api/v1/academic/matriculas/{id}/cambios-horario
+GET    /api/academic/matriculas
+POST   /api/academic/matriculas
+GET    /api/academic/matriculas/{id}
+PUT    /api/academic/matriculas/{id}
+DELETE /api/academic/matriculas/{id}
+GET    /api/academic/matriculas/{id}/notas
+GET    /api/academic/matriculas/{id}/calificaciones
+GET    /api/academic/matriculas/{id}/cambios-horario
 ```
 
 **MatriculaController Methods**:
@@ -533,28 +533,28 @@ GET    /api/v1/academic/matriculas/{id}/cambios-horario
 
 ```
 [PUBLIC]
-POST   /api/v1/registrations                                → Create new registration request
+POST   /api/registrations                                → Create new registration request
 
 [STAFF ONLY]
-GET    /api/v1/staff/solicitudes-inscripcion               → List all requests
-GET    /api/v1/staff/solicitudes-inscripcion/{id}          → View request details
-POST   /api/v1/staff/solicitudes-inscripcion/{id}/validar  → Approve (create matricula)
-POST   /api/v1/staff/solicitudes-inscripcion/{id}/rechazar → Reject
-POST   /api/v1/staff/solicitudes-inscripcion/{id}/cancelar → Cancel
+GET    /api/staff/solicitudes-inscripcion               → List all requests
+GET    /api/staff/solicitudes-inscripcion/{id}          → View request details
+POST   /api/staff/solicitudes-inscripcion/{id}/validar  → Approve (create matricula)
+POST   /api/staff/solicitudes-inscripcion/{id}/rechazar → Reject
+POST   /api/staff/solicitudes-inscripcion/{id}/cancelar → Cancel
 
 [STUDENT ONLY]
-GET    /api/v1/perfil/solicitudes-inscripcion              → My registration requests
-GET    /api/v1/perfil/cursos-completados                   → My completed courses
+GET    /api/perfil/solicitudes-inscripcion              → My registration requests
+GET    /api/perfil/cursos-completados                   → My completed courses
 ```
 
 ### 5.4 Staff Management Routes
 
 ```
-GET    /api/v1/academic/personas/staff
-POST   /api/v1/academic/personas/staff
-GET    /api/v1/academic/personas/staff/{id}
-PUT    /api/v1/academic/personas/staff/{id}
-DELETE /api/v1/academic/personas/staff/{id}
+GET    /api/academic/personas/staff
+POST   /api/academic/personas/staff
+GET    /api/academic/personas/staff/{id}
+PUT    /api/academic/personas/staff/{id}
+DELETE /api/academic/personas/staff/{id}
 ```
 
 ---
@@ -850,11 +850,11 @@ DELETE /api/v1/academic/personas/staff/{id}
 | PerfilInstructor Model | `app/Models/PerfilInstructor.php` | ✅ |
 | Persona Model | `app/Models/Persona.php` | ✅ |
 | --- | --- | --- |
-| CatalogoCursoController | `app/Http/Controllers/Api/V1/CatalogoCursoController.php` | ✅ |
-| CursoAbiertoController | `app/Http/Controllers/Api/V1/CursoAbiertoController.php` | ✅ |
-| MatriculaController | `app/Http/Controllers/Api/V1/MatriculaController.php` | ✅ |
-| RegistrationController | `app/Http/Controllers/Api/V1/RegistrationController.php` | ✅ (References missing model) |
-| StaffRegistrationController | `app/Http/Controllers/Api/V1/StaffRegistrationController.php` | ✅ |
+| CatalogoCursoController | `app/Http/Controllers/Api/CatalogoCursoController.php` | ✅ |
+| CursoAbiertoController | `app/Http/Controllers/Api/CursoAbiertoController.php` | ✅ |
+| MatriculaController | `app/Http/Controllers/Api/MatriculaController.php` | ✅ |
+| RegistrationController | `app/Http/Controllers/Api/RegistrationController.php` | ✅ (References missing model) |
+| StaffRegistrationController | `app/Http/Controllers/Api/StaffRegistrationController.php` | ✅ |
 | --- | --- | --- |
 | StoreCatalogoCursoRequest | `app/Http/Requests/StoreCatalogoCursoRequest.php` | ✅ |
 | UpdateCatalogoCursoRequest | `app/Http/Requests/UpdateCatalogoCursoRequest.php` | ✅ |

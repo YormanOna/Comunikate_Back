@@ -24,7 +24,7 @@ class CatalogoCursoTest extends TestCase
     {
         CatalogoCurso::factory()->count(5)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/catalogos-cursos');
+        $response = $this->authenticatedGet('/api/academic/catalogos-cursos');
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -55,7 +55,7 @@ class CatalogoCursoTest extends TestCase
         CatalogoCurso::factory()->count(3)->create(['es_activo' => true]);
         CatalogoCurso::factory()->count(2)->inactivo()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/catalogos-cursos?activos=true');
+        $response = $this->authenticatedGet('/api/academic/catalogos-cursos?activos=true');
 
         $response->assertStatus(200);
         
@@ -73,7 +73,7 @@ class CatalogoCursoTest extends TestCase
         CatalogoCurso::factory()->count(3)->regular()->create();
         CatalogoCurso::factory()->count(2)->personalizado()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/catalogos-cursos?categoria=regular');
+        $response = $this->authenticatedGet('/api/academic/catalogos-cursos?categoria=regular');
 
         $response->assertStatus(200);
         
@@ -94,7 +94,7 @@ class CatalogoCursoTest extends TestCase
         ]);
         CatalogoCurso::factory()->count(3)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/catalogos-cursos?buscar=Cálculo');
+        $response = $this->authenticatedGet('/api/academic/catalogos-cursos?buscar=Cálculo');
 
         $response->assertStatus(200);
         
@@ -120,7 +120,7 @@ class CatalogoCursoTest extends TestCase
             'es_activo' => true,
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/catalogos-cursos', $data);
+        $response = $this->authenticatedPost('/api/academic/catalogos-cursos', $data);
 
         $response->assertStatus(201)
                  ->assertJsonStructure([
@@ -152,7 +152,7 @@ class CatalogoCursoTest extends TestCase
             'nombre' => 'Cálculo I',
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/catalogos-cursos', $data);
+        $response = $this->authenticatedPost('/api/academic/catalogos-cursos', $data);
 
         $response->assertStatus(422)
                  ->assertJsonStructure([
@@ -168,7 +168,7 @@ class CatalogoCursoTest extends TestCase
     {
         $catalogo = CatalogoCurso::factory()->create();
 
-        $response = $this->authenticatedGet("/api/v1/academic/catalogos-cursos/{$catalogo->id}");
+        $response = $this->authenticatedGet("/api/academic/catalogos-cursos/{$catalogo->id}");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -195,7 +195,7 @@ class CatalogoCursoTest extends TestCase
     {
         $fakeId = fake()->uuid();
 
-        $response = $this->authenticatedGet("/api/v1/academic/catalogos-cursos/{$fakeId}");
+        $response = $this->authenticatedGet("/api/academic/catalogos-cursos/{$fakeId}");
 
         $response->assertStatus(404);
     }
@@ -215,7 +215,7 @@ class CatalogoCursoTest extends TestCase
             'creditos' => 4,
         ];
 
-        $response = $this->authenticatedPut("/api/v1/academic/catalogos-cursos/{$catalogo->id}", $data);
+        $response = $this->authenticatedPut("/api/academic/catalogos-cursos/{$catalogo->id}", $data);
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -237,7 +237,7 @@ class CatalogoCursoTest extends TestCase
     {
         $catalogo = CatalogoCurso::factory()->create();
 
-        $response = $this->authenticatedDelete("/api/v1/academic/catalogos-cursos/{$catalogo->id}");
+        $response = $this->authenticatedDelete("/api/academic/catalogos-cursos/{$catalogo->id}");
 
         $response->assertStatus(200);
 
@@ -253,7 +253,7 @@ class CatalogoCursoTest extends TestCase
     {
         CatalogoCurso::factory()->count(25)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/catalogos-cursos?per_page=10');
+        $response = $this->authenticatedGet('/api/academic/catalogos-cursos?per_page=10');
 
         $response->assertStatus(200);
         
@@ -266,7 +266,7 @@ class CatalogoCursoTest extends TestCase
      */
     public function test_requires_authentication()
     {
-        $response = $this->getJson('/api/v1/academic/catalogos-cursos');
+        $response = $this->getJson('/api/academic/catalogos-cursos');
 
         $response->assertStatus(401);
     }

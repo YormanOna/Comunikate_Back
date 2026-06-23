@@ -67,7 +67,7 @@ class RegistrationTest extends TestCase
     /** @test */
     public function public_can_view_available_courses()
     {
-        $response = $this->getJson('/api/v1/catalogo-cursos/disponibles');
+        $response = $this->getJson('/api/catalogo-cursos/disponibles');
         $response->assertStatus(200);
         $response->assertJsonStructure(['data', 'meta']);
     }
@@ -75,7 +75,7 @@ class RegistrationTest extends TestCase
     /** @test */
     public function available_courses_excludes_full_courses()
     {
-        $response = $this->getJson('/api/v1/catalogo-cursos/disponibles');
+        $response = $this->getJson('/api/catalogo-cursos/disponibles');
         $response->assertStatus(200);
 
         $cursos = collect($response->json('data'));
@@ -88,7 +88,7 @@ class RegistrationTest extends TestCase
     /** @test */
     public function student_can_submit_registration()
     {
-        $response = $this->postJson('/api/v1/registrations', [
+        $response = $this->postJson('/api/registrations', [
             'persona_id' => $this->estudiante->id,
             'curso_abierto_id' => $this->cursoDisponible->id,
             'monto_solicitado' => 100.00,
@@ -109,7 +109,7 @@ class RegistrationTest extends TestCase
     /** @test */
     public function registration_validates_full_payment_amount()
     {
-        $response = $this->postJson('/api/v1/registrations', [
+        $response = $this->postJson('/api/registrations', [
             'persona_id' => $this->estudiante->id,
             'curso_abierto_id' => $this->cursoDisponible->id,
             'monto_solicitado' => 50.00, // Wrong amount
@@ -125,7 +125,7 @@ class RegistrationTest extends TestCase
     /** @test */
     public function registration_validates_course_capacity()
     {
-        $response = $this->postJson('/api/v1/registrations', [
+        $response = $this->postJson('/api/registrations', [
             'persona_id' => $this->estudiante->id,
             'curso_abierto_id' => $this->cursoLleno->id,
             'monto_solicitado' => 100.00,
@@ -141,7 +141,7 @@ class RegistrationTest extends TestCase
     /** @test */
     public function external_participant_can_register()
     {
-        $response = $this->postJson('/api/v1/registrations', [
+        $response = $this->postJson('/api/registrations', [
             'nombres' => 'María',
             'apellidos' => 'González',
             'correo' => 'maria@ext.com',

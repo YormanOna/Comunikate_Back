@@ -25,7 +25,7 @@ class TrasladoModuloTest extends TestCase
     {
         TrasladoModulo::factory()->count(5)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/traslados-modulo');
+        $response = $this->authenticatedGet('/api/academic/traslados-modulo');
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -49,7 +49,7 @@ class TrasladoModuloTest extends TestCase
         TrasladoModulo::factory()->count(3)->pendiente()->create();
         TrasladoModulo::factory()->count(2)->aprobado()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/traslados-modulo?pendientes=true');
+        $response = $this->authenticatedGet('/api/academic/traslados-modulo?pendientes=true');
 
         $response->assertStatus(200);
         
@@ -67,7 +67,7 @@ class TrasladoModuloTest extends TestCase
         TrasladoModulo::factory()->count(2)->pendiente()->create();
         TrasladoModulo::factory()->count(2)->rechazado()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/traslados-modulo?estado=pendiente');
+        $response = $this->authenticatedGet('/api/academic/traslados-modulo?estado=pendiente');
 
         $response->assertStatus(200);
         
@@ -93,7 +93,7 @@ class TrasladoModuloTest extends TestCase
             'motivo' => 'Necesito cambiar de grupo',
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/traslados-modulo', $data);
+        $response = $this->authenticatedPost('/api/academic/traslados-modulo', $data);
 
         $response->assertStatus(201)
                  ->assertJsonStructure([
@@ -113,7 +113,7 @@ class TrasladoModuloTest extends TestCase
     {
         $traslado = TrasladoModulo::factory()->create();
 
-        $response = $this->authenticatedGet("/api/v1/academic/traslados-modulo/{$traslado->id}");
+        $response = $this->authenticatedGet("/api/academic/traslados-modulo/{$traslado->id}");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -135,7 +135,7 @@ class TrasladoModuloTest extends TestCase
             'observaciones_admin' => 'Cambio autorizado',
         ];
 
-        $response = $this->authenticatedPut("/api/v1/academic/traslados-modulo/{$traslado->id}", $data);
+        $response = $this->authenticatedPut("/api/academic/traslados-modulo/{$traslado->id}", $data);
 
         $response->assertStatus(200);
 
@@ -152,7 +152,7 @@ class TrasladoModuloTest extends TestCase
     {
         $traslado = TrasladoModulo::factory()->create();
 
-        $response = $this->authenticatedDelete("/api/v1/academic/traslados-modulo/{$traslado->id}");
+        $response = $this->authenticatedDelete("/api/academic/traslados-modulo/{$traslado->id}");
 
         $response->assertStatus(200);
 
@@ -166,7 +166,7 @@ class TrasladoModuloTest extends TestCase
     {
         $traslado = TrasladoModulo::factory()->pendiente()->create();
 
-        $response = $this->authenticatedPost("/api/v1/academic/traslados-modulo/{$traslado->id}/aprobar");
+        $response = $this->authenticatedPost("/api/academic/traslados-modulo/{$traslado->id}/aprobar");
 
         $response->assertStatus(200);
 
@@ -185,7 +185,7 @@ class TrasladoModuloTest extends TestCase
 
         $data = ['observaciones_admin' => 'No hay cupo disponible'];
 
-        $response = $this->authenticatedPost("/api/v1/academic/traslados-modulo/{$traslado->id}/rechazar", $data);
+        $response = $this->authenticatedPost("/api/academic/traslados-modulo/{$traslado->id}/rechazar", $data);
 
         $response->assertStatus(200);
 
@@ -202,7 +202,7 @@ class TrasladoModuloTest extends TestCase
     {
         $traslado = TrasladoModulo::factory()->aprobado()->create();
 
-        $response = $this->authenticatedPost("/api/v1/academic/traslados-modulo/{$traslado->id}/completar");
+        $response = $this->authenticatedPost("/api/academic/traslados-modulo/{$traslado->id}/completar");
 
         $response->assertStatus(200);
 
@@ -230,7 +230,7 @@ class TrasladoModuloTest extends TestCase
             'motivo' => 'Cambio solicitado',
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/traslados-modulo', $data);
+        $response = $this->authenticatedPost('/api/academic/traslados-modulo', $data);
 
         // Debería rechazar si los módulos no son del mismo curso
         if ($modulo1->curso_abierto_id !== $modulo2->curso_abierto_id) {
@@ -258,7 +258,7 @@ class TrasladoModuloTest extends TestCase
             'motivo' => 'Cambio solicitado',
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/traslados-modulo', $data);
+        $response = $this->authenticatedPost('/api/academic/traslados-modulo', $data);
 
         // Debería rechazar porque el módulo ya pasó
         $response->assertStatus(422);
@@ -271,7 +271,7 @@ class TrasladoModuloTest extends TestCase
     {
         TrasladoModulo::factory()->count(25)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/traslados-modulo?per_page=10');
+        $response = $this->authenticatedGet('/api/academic/traslados-modulo?per_page=10');
 
         $response->assertStatus(200);
         

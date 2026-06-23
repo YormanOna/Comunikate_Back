@@ -106,7 +106,7 @@ return [
 
     'defaults' => [
         'controllers_namespace' => 'App\\Http\\Controllers',
-        'routes_prefix' => 'api/v1',
+        'routes_prefix' => 'api',
         'info_version' => env('L5_SWAGGER_VERSION', '1.0.0'),
         'app_url' => env('APP_URL', 'http://localhost'),
 
@@ -139,7 +139,7 @@ return [
          * The path to be used as base path in swagger.json.
          * This allows you to separate swagger documentation per API version.
          */
-        'base_path' => 'api/v1',
+        'base_path' => 'api',
 
         /*
          * Edit the operations sort, default: Routes order

@@ -69,32 +69,32 @@ SolicitudInscripcion (Request)
 
 ### Public (No Auth Required)
 ```
-GET  /api/v1/catalogo-cursos/disponibles
-POST /api/v1/registrations
+GET  /api/catalogo-cursos/disponibles
+POST /api/registrations
 ```
 
 ### Staff Only
 ```
-GET  /api/v1/staff/solicitudes-inscripcion
-GET  /api/v1/staff/solicitudes-inscripcion/{id}
-POST /api/v1/staff/solicitudes-inscripcion/{id}/validar
-POST /api/v1/staff/solicitudes-inscripcion/{id}/rechazar
-POST /api/v1/staff/solicitudes-inscripcion/{id}/cancelar
+GET  /api/staff/solicitudes-inscripcion
+GET  /api/staff/solicitudes-inscripcion/{id}
+POST /api/staff/solicitudes-inscripcion/{id}/validar
+POST /api/staff/solicitudes-inscripcion/{id}/rechazar
+POST /api/staff/solicitudes-inscripcion/{id}/cancelar
 ```
 
 ### Student Portal
 ```
-GET  /api/v1/perfil/solicitudes-inscripcion
-GET  /api/v1/perfil/cursos-completados
+GET  /api/perfil/solicitudes-inscripcion
+GET  /api/perfil/cursos-completados
 ```
 
 ### Academic (Protected)
 ```
-GET    /api/v1/academic/catalogos-cursos
-POST   /api/v1/academic/catalogos-cursos
-PUT    /api/v1/academic/catalogos-cursos/{id}
-GET    /api/v1/academic/matriculas
-POST   /api/v1/academic/matriculas
+GET    /api/academic/catalogos-cursos
+POST   /api/academic/catalogos-cursos
+PUT    /api/academic/catalogos-cursos/{id}
+GET    /api/academic/matriculas
+POST   /api/academic/matriculas
 ```
 
 ---
@@ -198,10 +198,10 @@ Matricula Estados:
 
 **Controllers**:
 ```
-/home/yorman/Documentos/GitHub/backend/app/Http/Controllers/Api/V1/CatalogoCursoController.php
-/home/yorman/Documentos/GitHub/backend/app/Http/Controllers/Api/V1/RegistrationController.php
-/home/yorman/Documentos/GitHub/backend/app/Http/Controllers/Api/V1/StaffRegistrationController.php
-/home/yorman/Documentos/GitHub/backend/app/Http/Controllers/Api/V1/MatriculaController.php
+/home/yorman/Documentos/GitHub/backend/app/Http/Controllers/Api/CatalogoCursoController.php
+/home/yorman/Documentos/GitHub/backend/app/Http/Controllers/Api/RegistrationController.php
+/home/yorman/Documentos/GitHub/backend/app/Http/Controllers/Api/StaffRegistrationController.php
+/home/yorman/Documentos/GitHub/backend/app/Http/Controllers/Api/MatriculaController.php
 ```
 
 **Requests**:

@@ -23,6 +23,7 @@ class Persona extends Model
         'apellidos',
         'correo',
         'celular',
+        'ciudad',
         'ciudad_id',
         'cedula_photo_url',
         'ficha_registro_url',

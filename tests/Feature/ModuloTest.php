@@ -26,7 +26,7 @@ class ModuloTest extends TestCase
     {
         Modulo::factory()->count(5)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/modulos');
+        $response = $this->authenticatedGet('/api/academic/modulos');
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -54,7 +54,7 @@ class ModuloTest extends TestCase
         $catalogo = CatalogoCurso::factory()->create();
         Modulo::factory()->count(2)->delCatalogo()->create(['catalogo_curso_id' => $catalogo->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/modulos?catalogo_curso_id={$catalogo->id}");
+        $response = $this->authenticatedGet("/api/academic/modulos?catalogo_curso_id={$catalogo->id}");
 
         $response->assertStatus(200);
         
@@ -72,7 +72,7 @@ class ModuloTest extends TestCase
         $curso = CursoAbierto::factory()->create();
         Modulo::factory()->count(3)->delCurso()->create(['curso_abierto_id' => $curso->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/modulos?curso_abierto_id={$curso->id}");
+        $response = $this->authenticatedGet("/api/academic/modulos?curso_abierto_id={$curso->id}");
 
         $response->assertStatus(200);
         
@@ -98,7 +98,7 @@ class ModuloTest extends TestCase
             'curso_abierto_id' => $curso->id,
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/modulos', $data);
+        $response = $this->authenticatedPost('/api/academic/modulos', $data);
 
         $response->assertStatus(201)
                  ->assertJsonStructure([
@@ -120,7 +120,7 @@ class ModuloTest extends TestCase
     {
         $modulo = Modulo::factory()->create();
 
-        $response = $this->authenticatedGet("/api/v1/academic/modulos/{$modulo->id}");
+        $response = $this->authenticatedGet("/api/academic/modulos/{$modulo->id}");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -145,7 +145,7 @@ class ModuloTest extends TestCase
             'ponderacion' => 30,
         ];
 
-        $response = $this->authenticatedPut("/api/v1/academic/modulos/{$modulo->id}", $data);
+        $response = $this->authenticatedPut("/api/academic/modulos/{$modulo->id}", $data);
 
         $response->assertStatus(200);
 
@@ -163,7 +163,7 @@ class ModuloTest extends TestCase
     {
         $modulo = Modulo::factory()->create();
 
-        $response = $this->authenticatedDelete("/api/v1/academic/modulos/{$modulo->id}");
+        $response = $this->authenticatedDelete("/api/academic/modulos/{$modulo->id}");
 
         $response->assertStatus(200);
 
@@ -178,7 +178,7 @@ class ModuloTest extends TestCase
         $modulo = Modulo::factory()->create();
         Nota::factory()->count(5)->create(['modulo_id' => $modulo->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/modulos/{$modulo->id}/notas");
+        $response = $this->authenticatedGet("/api/academic/modulos/{$modulo->id}/notas");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -198,7 +198,7 @@ class ModuloTest extends TestCase
         $modulo = Modulo::factory()->primero()->create();
         Nota::factory()->count(10)->aprobada()->create(['modulo_id' => $modulo->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/modulos/{$modulo->id}/estadisticas");
+        $response = $this->authenticatedGet("/api/academic/modulos/{$modulo->id}/estadisticas");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -226,7 +226,7 @@ class ModuloTest extends TestCase
     {
         Modulo::factory()->count(25)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/modulos?per_page=10');
+        $response = $this->authenticatedGet('/api/academic/modulos?per_page=10');
 
         $response->assertStatus(200);
         

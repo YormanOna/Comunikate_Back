@@ -737,6 +737,8 @@ class EstudianteController extends Controller
             ->estudiantes()
             ->with([
                 'matriculas.cursoAbierto.catalogo',
+                'matriculas.cursoAbierto.modulos',
+                'matriculas.lineasPago.modulo',
                 'matriculas.cuentaPorCobrar.transacciones',
                 'ciudad',
             ])
@@ -745,6 +747,7 @@ class EstudianteController extends Controller
         $datosEstudiante = null;
         $cuentas = collect();
         $transacciones = collect();
+        $matriculasConLineas = collect();
 
         if ($estudiante) {
             $datosEstudiante = [
@@ -756,6 +759,30 @@ class EstudianteController extends Controller
             ];
 
             foreach ($estudiante->matriculas as $matricula) {
+                $matriculasConLineas->push([
+                    'id' => $matricula->id,
+                    'curso' => [
+                        'nombre' => ($matricula->cursoAbierto->catalogo->nombre ?? 'Curso'),
+                        'instancia' => $matricula->cursoAbierto->nombre_instancia ?? '',
+                    ],
+                    'lineas_pago' => $matricula->lineasPago->map(function ($lp) {
+                        return [
+                            'id' => $lp->id,
+                            'modulo' => [
+                                'id' => $lp->modulo->id ?? null,
+                                'nombre' => $lp->modulo->nombre ?? 'Módulo',
+                                'numero_orden' => $lp->modulo->numero_orden ?? $lp->orden,
+                            ],
+                            'monto_original' => (float) $lp->monto_original,
+                            'monto_ajustado' => (float) $lp->monto_ajustado,
+                            'monto_abonado' => (float) $lp->monto_abonado,
+                            'saldo_pendiente' => (float) $lp->saldo_pendiente,
+                            'estado' => $lp->estado,
+                            'orden' => $lp->orden,
+                        ];
+                    }),
+                ]);
+
                 $cuenta = $matricula->cuentaPorCobrar;
                 if ($cuenta) {
                     $cuentas->push([
@@ -885,6 +912,7 @@ class EstudianteController extends Controller
         return response()->json([
             'datos' => [
                 'estudiante' => $datosEstudiante,
+                'matriculas' => $matriculasConLineas->values(),
                 'cuentas' => $cuentas->values(),
                 'transacciones' => $transacciones->sortByDesc('fecha_pago')->values(),
                 'resumen' => [

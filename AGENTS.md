@@ -37,7 +37,7 @@ php artisan l5-swagger:generate
 ## Critical Architecture Facts
 
 ### API Structure
-- **Prefix**: All endpoints under `/api/v1/academic/` (auth/profile routes outside academic)
+- **Prefix**: All endpoints under `/api/academic/` (auth/profile routes outside academic)
 - **Authentication**: Laravel Sanctum (JWT tokens, stateless)
 - **Database**: PostgreSQL primary (pgsql), SQLite in-memory for tests
 - **Response format**: JSON, pagination with meta (current_page, per_page, total, last_page)
@@ -242,9 +242,9 @@ GET  /perfil/cursos-completados          → View my completed courses (student)
 - **Interactive**: "Try it out" button; enter Bearer token in top-right "Authorize" button
 
 ### Documentation Code Structure
-- `app/Http/Controllers/Api/V1/ApiDocumentation.php`: Global config (info, tags, security schemes)
-- `app/Http/Controllers/Api/V1/CatalogoCursoDocumentation.php`: FASE 1-4 endpoints
-- `app/Http/Controllers/Api/V1/Phase7Documentation.php`: FASE 7 (bulk, export, reports)
+- `app/Http/Controllers/Api/ApiDocumentation.php`: Global config (info, tags, security schemes)
+- `app/Http/Controllers/Api/CatalogoCursoDocumentation.php`: FASE 1-4 endpoints
+- `app/Http/Controllers/Api/Phase7Documentation.php`: FASE 7 (bulk, export, reports)
 - **New endpoint?** Add @OA\* annotations to controller method, then run `l5-swagger:generate`
 
 ### Scribe Config (Fallback)
@@ -295,7 +295,7 @@ GET  /perfil/cursos-completados          → View my completed courses (student)
 |------|---------|
 | `database/migrations/` | FASE 1-11 migrations (72 total, 8 new in FASES 10-11) |
 | `app/Models/` | 13 Eloquent models (11 original + CursoPersonalizado + Taller hierarchy) |
-| `app/Http/Controllers/Api/V1/` | 14 controllers + 3 doc classes |
+| `app/Http/Controllers/Api/` | 14 controllers + 3 doc classes |
 | `app/Http/Requests/` | 30+ Form Request classes (validation rules) |
 | `app/Services/` | 7 business logic services |
 | `tests/Feature/` | ~92 HTTP integration tests |

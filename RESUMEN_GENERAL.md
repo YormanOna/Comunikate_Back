@@ -17,7 +17,7 @@ Se ha diseñado e implementado un **sistema completo de gestión académica** co
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      API REST (Laravel)                      │
-│                    /api/v1/academic/*                        │
+│                    /api/academic/*                        │
 └─────────────────────────────────────────────────────────────┘
            │
            ├─ Controllers (8 + 3 especializados)
@@ -114,14 +114,14 @@ Se ha diseñado e implementado un **sistema completo de gestión académica** co
 - Endpoints especiales (estadísticas, relaciones, cambios de estado)
 
 **Archivos**: 
-- `/app/Http/Controllers/Api/V1/*Controller.php` (8 archivos)
+- `/app/Http/Controllers/Api/*Controller.php` (8 archivos)
 - `/app/Http/Requests/*Request.php` (16 archivos)
 
 ### FASE 4: API Routes ✅
-- Implementar 43+ endpoints REST bajo `/api/v1/academic/`
+- Implementar 43+ endpoints REST bajo `/api/academic/`
 - Middleware `auth:sanctum` en todos
 - Rutas organizadas por recurso
-- Endpoint `/api/v1/academic/{resource}/` para CRUD
+- Endpoint `/api/academic/{resource}/` para CRUD
 - Rutas especiales para acciones (aprobar, rechazar, completar)
 
 **Archivos**: `/routes/api.php`
@@ -155,10 +155,10 @@ Se ha diseñado e implementado un **sistema completo de gestión académica** co
 - Eliminación bulk
 
 **Endpoints**:
-- `POST /api/v1/academic/bulk/notas/register`
-- `POST /api/v1/academic/bulk/notas/update`
-- `POST /api/v1/academic/bulk/notas/delete`
-- `POST /api/v1/academic/bulk/matriculas/cambiar-estado`
+- `POST /api/academic/bulk/notas/register`
+- `POST /api/academic/bulk/notas/update`
+- `POST /api/academic/bulk/notas/delete`
+- `POST /api/academic/bulk/matriculas/cambiar-estado`
 
 #### Exportaciones
 - 3 formatos: CSV, PDF, Excel
@@ -167,9 +167,9 @@ Se ha diseñado e implementado un **sistema completo de gestión académica** co
 - Template descargable para importación
 
 **Endpoints**:
-- `POST /api/v1/academic/export`
-- `GET /api/v1/academic/export/template-csv`
-- `GET /api/v1/academic/export/formatos-disponibles`
+- `POST /api/academic/export`
+- `GET /api/academic/export/template-csv`
+- `GET /api/academic/export/formatos-disponibles`
 
 #### Reportes
 - Reporte de asistencia (% presencia, alertas)
@@ -179,15 +179,15 @@ Se ha diseñado e implementado un **sistema completo de gestión académica** co
 - Comparativa entre estudiantes
 
 **Endpoints**:
-- `GET /api/v1/academic/reports/asistencia`
-- `GET /api/v1/academic/reports/desempeño`
-- `GET /api/v1/academic/reports/progreso`
-- `GET /api/v1/academic/reports/resumen-academico`
-- `GET /api/v1/academic/reports/tipos-disponibles`
-- `GET /api/v1/academic/reports/comparativa-estudiantes`
+- `GET /api/academic/reports/asistencia`
+- `GET /api/academic/reports/desempeño`
+- `GET /api/academic/reports/progreso`
+- `GET /api/academic/reports/resumen-academico`
+- `GET /api/academic/reports/tipos-disponibles`
+- `GET /api/academic/reports/comparativa-estudiantes`
 
 **Archivos**: 
-- `/app/Http/Controllers/Api/V1/*Controller.php` (3 archivos)
+- `/app/Http/Controllers/Api/*Controller.php` (3 archivos)
 - `/app/Services/*Service.php` (2 archivos)
 - `/app/Http/Requests/*Request.php` (6 archivos)
 
@@ -303,7 +303,7 @@ TOTAL: 59 endpoints
 ```
 app/
 ├── Http/
-│   ├── Controllers/Api/V1/
+│   ├── Controllers/Api/
 │   │   ├── CatalogoCursoController.php
 │   │   ├── CursoAbiertoController.php
 │   │   ├── HorarioController.php
@@ -488,7 +488,7 @@ Se han generado **7 documentos detallados** (~5,000 líneas totales):
 ## 🎓 Decisiones Clave
 
 1. **BD**: PostgreSQL con 7 esquemas, estructura normalizada
-2. **APIs**: REST con HTTP methods estándar, recursos bajo `/api/v1/academic/`
+2. **APIs**: REST con HTTP methods estándar, recursos bajo `/api/academic/`
 3. **Autenticación**: Laravel Sanctum tokens
 4. **Tests**: PHPUnit con SQLite in-memory (rápido)
 5. **Bulk**: Máximo 1000 items para evitar timeouts

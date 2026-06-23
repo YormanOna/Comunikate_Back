@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCiudadRequest extends FormRequest
 {
@@ -20,7 +21,7 @@ class StoreCiudadRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre' => ['required', 'string', 'max:100', 'unique:ciudades,nombre'],
+            'nombre' => ['required', 'string', 'max:100', Rule::unique('ciudades', 'nombre')->withoutTrashed()],
         ];
     }
 

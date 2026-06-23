@@ -25,7 +25,7 @@ class NotaTest extends TestCase
     {
         Nota::factory()->count(5)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/notas');
+        $response = $this->authenticatedGet('/api/academic/notas');
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -49,7 +49,7 @@ class NotaTest extends TestCase
         Nota::factory()->count(3)->aprobada()->create();
         Nota::factory()->count(2)->reprobada()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/notas?aprobadas=true');
+        $response = $this->authenticatedGet('/api/academic/notas?aprobadas=true');
 
         $response->assertStatus(200);
         
@@ -67,7 +67,7 @@ class NotaTest extends TestCase
         Nota::factory()->count(3)->aprobada()->create();
         Nota::factory()->count(2)->reprobada()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/notas?estado=aprobadas');
+        $response = $this->authenticatedGet('/api/academic/notas?estado=aprobadas');
 
         $response->assertStatus(200);
         
@@ -88,7 +88,7 @@ class NotaTest extends TestCase
         Nota::factory()->count(3)->create(['matricula_id' => $matricula1->id]);
         Nota::factory()->count(2)->create(['matricula_id' => $matricula2->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/notas?matricula_id={$matricula1->id}");
+        $response = $this->authenticatedGet("/api/academic/notas?matricula_id={$matricula1->id}");
 
         $response->assertStatus(200);
         
@@ -109,7 +109,7 @@ class NotaTest extends TestCase
         Nota::factory()->count(3)->create(['modulo_id' => $modulo1->id]);
         Nota::factory()->count(2)->create(['modulo_id' => $modulo2->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/notas?modulo_id={$modulo1->id}");
+        $response = $this->authenticatedGet("/api/academic/notas?modulo_id={$modulo1->id}");
 
         $response->assertStatus(200);
         
@@ -134,7 +134,7 @@ class NotaTest extends TestCase
             'observaciones' => 'Excelente desempeño',
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/notas', $data);
+        $response = $this->authenticatedPost('/api/academic/notas', $data);
 
         $response->assertStatus(201)
                  ->assertJsonStructure([
@@ -163,7 +163,7 @@ class NotaTest extends TestCase
             'calificacion' => 4.0,
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/notas', $data);
+        $response = $this->authenticatedPost('/api/academic/notas', $data);
 
         $response->assertStatus(422); // Conflict
     }
@@ -175,7 +175,7 @@ class NotaTest extends TestCase
     {
         $nota = Nota::factory()->create();
 
-        $response = $this->authenticatedGet("/api/v1/academic/notas/{$nota->id}");
+        $response = $this->authenticatedGet("/api/academic/notas/{$nota->id}");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -197,7 +197,7 @@ class NotaTest extends TestCase
             'observaciones' => 'Corrección de calificación',
         ];
 
-        $response = $this->authenticatedPut("/api/v1/academic/notas/{$nota->id}", $data);
+        $response = $this->authenticatedPut("/api/academic/notas/{$nota->id}", $data);
 
         $response->assertStatus(200);
 
@@ -214,7 +214,7 @@ class NotaTest extends TestCase
     {
         $nota = Nota::factory()->create();
 
-        $response = $this->authenticatedDelete("/api/v1/academic/notas/{$nota->id}");
+        $response = $this->authenticatedDelete("/api/academic/notas/{$nota->id}");
 
         $response->assertStatus(200);
 
@@ -228,7 +228,7 @@ class NotaTest extends TestCase
     {
         $nota = Nota::factory()->excelente()->create(['calificacion' => 4.8]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/notas/{$nota->id}/descriptiva");
+        $response = $this->authenticatedGet("/api/academic/notas/{$nota->id}/descriptiva");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -262,7 +262,7 @@ class NotaTest extends TestCase
             'calificacion' => 10, // Fuera de rango (0-5)
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/notas', $data);
+        $response = $this->authenticatedPost('/api/academic/notas', $data);
 
         $response->assertStatus(422)
                  ->assertJsonStructure(['message', 'errors']);
@@ -275,7 +275,7 @@ class NotaTest extends TestCase
     {
         Nota::factory()->count(25)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/notas?per_page=10');
+        $response = $this->authenticatedGet('/api/academic/notas?per_page=10');
 
         $response->assertStatus(200);
         

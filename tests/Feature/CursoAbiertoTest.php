@@ -28,7 +28,7 @@ class CursoAbiertoTest extends TestCase
     {
         CursoAbierto::factory()->count(5)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/cursos-abiertos');
+        $response = $this->authenticatedGet('/api/academic/cursos-abiertos');
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -57,7 +57,7 @@ class CursoAbiertoTest extends TestCase
         CursoAbierto::factory()->count(3)->create(['es_activo' => true]);
         CursoAbierto::factory()->count(2)->inactivo()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/cursos-abiertos?activos=true');
+        $response = $this->authenticatedGet('/api/academic/cursos-abiertos?activos=true');
 
         $response->assertStatus(200);
         
@@ -81,7 +81,7 @@ class CursoAbiertoTest extends TestCase
         // Finalizado
         CursoAbierto::factory()->finalizado()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/cursos-abiertos?vigentes=true');
+        $response = $this->authenticatedGet('/api/academic/cursos-abiertos?vigentes=true');
 
         $response->assertStatus(200);
         
@@ -108,7 +108,7 @@ class CursoAbiertoTest extends TestCase
         CursoAbierto::factory()->create(['catalogo_curso_id' => $catalogo1->id]);
         CursoAbierto::factory()->create(['catalogo_curso_id' => $catalogo2->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/cursos-abiertos?catalogo_curso_id={$catalogo1->id}");
+        $response = $this->authenticatedGet("/api/academic/cursos-abiertos?catalogo_curso_id={$catalogo1->id}");
 
         $response->assertStatus(200);
         
@@ -126,7 +126,7 @@ class CursoAbiertoTest extends TestCase
         CursoAbierto::factory()->create(['semestre' => '2026-1']);
         CursoAbierto::factory()->create(['semestre' => '2026-2']);
 
-        $response = $this->authenticatedGet('/api/v1/academic/cursos-abiertos?semestre=2026-1');
+        $response = $this->authenticatedGet('/api/academic/cursos-abiertos?semestre=2026-1');
 
         $response->assertStatus(200);
         
@@ -144,7 +144,7 @@ class CursoAbiertoTest extends TestCase
         CursoAbierto::factory()->create(['nombre_instancia' => 'Grupo A']);
         CursoAbierto::factory()->count(3)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/cursos-abiertos?buscar=Grupo');
+        $response = $this->authenticatedGet('/api/academic/cursos-abiertos?buscar=Grupo');
 
         $response->assertStatus(200);
         
@@ -171,7 +171,7 @@ class CursoAbiertoTest extends TestCase
             'observaciones' => 'Test course',
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/cursos-abiertos', $data);
+        $response = $this->authenticatedPost('/api/academic/cursos-abiertos', $data);
 
         $response->assertStatus(201)
                  ->assertJsonStructure([
@@ -198,7 +198,7 @@ class CursoAbiertoTest extends TestCase
     {
         $curso = CursoAbierto::factory()->create();
 
-        $response = $this->authenticatedGet("/api/v1/academic/cursos-abiertos/{$curso->id}");
+        $response = $this->authenticatedGet("/api/academic/cursos-abiertos/{$curso->id}");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -231,7 +231,7 @@ class CursoAbiertoTest extends TestCase
             'capacidad_maxima' => 40,
         ];
 
-        $response = $this->authenticatedPut("/api/v1/academic/cursos-abiertos/{$curso->id}", $data);
+        $response = $this->authenticatedPut("/api/academic/cursos-abiertos/{$curso->id}", $data);
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -253,7 +253,7 @@ class CursoAbiertoTest extends TestCase
     {
         $curso = CursoAbierto::factory()->create();
 
-        $response = $this->authenticatedDelete("/api/v1/academic/cursos-abiertos/{$curso->id}");
+        $response = $this->authenticatedDelete("/api/academic/cursos-abiertos/{$curso->id}");
 
         $response->assertStatus(200);
 
@@ -270,7 +270,7 @@ class CursoAbiertoTest extends TestCase
         $curso = CursoAbierto::factory()->create();
         Horario::factory()->count(3)->create(['curso_abierto_id' => $curso->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/cursos-abiertos/{$curso->id}/horarios");
+        $response = $this->authenticatedGet("/api/academic/cursos-abiertos/{$curso->id}/horarios");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -296,7 +296,7 @@ class CursoAbiertoTest extends TestCase
         $curso = CursoAbierto::factory()->create();
         Matricula::factory()->count(5)->create(['curso_abierto_id' => $curso->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/cursos-abiertos/{$curso->id}/matriculas");
+        $response = $this->authenticatedGet("/api/academic/cursos-abiertos/{$curso->id}/matriculas");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -322,7 +322,7 @@ class CursoAbiertoTest extends TestCase
         $curso = CursoAbierto::factory()->create();
         Modulo::factory()->count(4)->create(['curso_abierto_id' => $curso->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/cursos-abiertos/{$curso->id}/modulos");
+        $response = $this->authenticatedGet("/api/academic/cursos-abiertos/{$curso->id}/modulos");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -348,7 +348,7 @@ class CursoAbiertoTest extends TestCase
         $curso = CursoAbierto::factory()->lleno()->create(['capacidad_maxima' => 30]);
         Matricula::factory()->count(20)->create(['curso_abierto_id' => $curso->id, 'estado' => 'activo']);
 
-        $response = $this->authenticatedGet("/api/v1/academic/cursos-abiertos/{$curso->id}/estadisticas");
+        $response = $this->authenticatedGet("/api/academic/cursos-abiertos/{$curso->id}/estadisticas");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -374,7 +374,7 @@ class CursoAbiertoTest extends TestCase
      */
     public function test_requires_authentication()
     {
-        $response = $this->getJson('/api/v1/academic/cursos-abiertos');
+        $response = $this->getJson('/api/academic/cursos-abiertos');
 
         $response->assertStatus(401);
     }
@@ -386,7 +386,7 @@ class CursoAbiertoTest extends TestCase
     {
         CursoAbierto::factory()->count(25)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/cursos-abiertos?per_page=10');
+        $response = $this->authenticatedGet('/api/academic/cursos-abiertos?per_page=10');
 
         $response->assertStatus(200);
         

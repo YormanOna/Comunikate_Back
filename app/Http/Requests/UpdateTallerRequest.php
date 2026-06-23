@@ -22,6 +22,7 @@ class UpdateTallerRequest extends FormRequest
             'hora_fin' => 'sometimes|date_format:H:i',
             'instructor_id' => 'sometimes|uuid|exists:personas,id',
             'modalidad' => 'sometimes|in:presencial,virtual',
+            'ciudad_id' => 'nullable|integer|exists:ciudades,id',
             'capacidad_maxima' => 'sometimes|integer|min:1|max:500',
             'precio' => 'sometimes|numeric|min:0',
             'estado' => 'sometimes|in:pendiente,confirmado,completado,cancelado',

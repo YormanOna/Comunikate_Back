@@ -11,13 +11,14 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         $persona = Persona::firstOrCreate(
-            ['cedula' => env('ADMIN_CEDULA', '0000000001')],
+            ['cedula' => env('ADMIN_CEDULA')],
             [
                 'tipo' => 'admin',
-                'nombres' => env('ADMIN_NOMBRES', 'Administrador'),
-                'apellidos' => env('ADMIN_APELLIDOS', 'Sistema'),
-                'correo' => env('ADMIN_EMAIL', 'admin@comunikate.com'),
-                'celular' => env('ADMIN_CELULAR', '0000000000'),
+                'nombres' => env('ADMIN_NOMBRES'),
+                'apellidos' => env('ADMIN_APELLIDOS'),
+                'correo' => env('ADMIN_EMAIL'),
+                'celular' => env('ADMIN_CELULAR'),
+                'ciudad' => env('ADMIN_CIUDAD'),
                 'es_activo' => true,
             ]
         );

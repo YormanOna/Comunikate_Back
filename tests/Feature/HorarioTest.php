@@ -24,7 +24,7 @@ class HorarioTest extends TestCase
     {
         Horario::factory()->count(5)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/horarios');
+        $response = $this->authenticatedGet('/api/academic/horarios');
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -50,7 +50,7 @@ class HorarioTest extends TestCase
         Horario::factory()->count(3)->create(['es_activo' => true]);
         Horario::factory()->count(2)->inactivo()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/horarios?activos=true');
+        $response = $this->authenticatedGet('/api/academic/horarios?activos=true');
 
         $response->assertStatus(200);
         
@@ -71,7 +71,7 @@ class HorarioTest extends TestCase
         Horario::factory()->create(['curso_abierto_id' => $curso1->id]);
         Horario::factory()->create(['curso_abierto_id' => $curso2->id]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/horarios?curso_abierto_id={$curso1->id}");
+        $response = $this->authenticatedGet("/api/academic/horarios?curso_abierto_id={$curso1->id}");
 
         $response->assertStatus(200);
         
@@ -97,7 +97,7 @@ class HorarioTest extends TestCase
             'es_activo' => true,
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/horarios', $data);
+        $response = $this->authenticatedPost('/api/academic/horarios', $data);
 
         $response->assertStatus(201)
                  ->assertJsonStructure([
@@ -119,7 +119,7 @@ class HorarioTest extends TestCase
     {
         $horario = Horario::factory()->create();
 
-        $response = $this->authenticatedGet("/api/v1/academic/horarios/{$horario->id}");
+        $response = $this->authenticatedGet("/api/academic/horarios/{$horario->id}");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -144,7 +144,7 @@ class HorarioTest extends TestCase
             'hora_fin' => '11:00',
         ];
 
-        $response = $this->authenticatedPut("/api/v1/academic/horarios/{$horario->id}", $data);
+        $response = $this->authenticatedPut("/api/academic/horarios/{$horario->id}", $data);
 
         $response->assertStatus(200);
 
@@ -162,7 +162,7 @@ class HorarioTest extends TestCase
     {
         $horario = Horario::factory()->create();
 
-        $response = $this->authenticatedDelete("/api/v1/academic/horarios/{$horario->id}");
+        $response = $this->authenticatedDelete("/api/academic/horarios/{$horario->id}");
 
         $response->assertStatus(200);
 
@@ -177,7 +177,7 @@ class HorarioTest extends TestCase
         $horario = Horario::factory()->create();
         // Las matrículas se relacionan a través del curso abierto
         
-        $response = $this->authenticatedGet("/api/v1/academic/horarios/{$horario->id}/matriculas");
+        $response = $this->authenticatedGet("/api/academic/horarios/{$horario->id}/matriculas");
 
         $response->assertStatus(200)
                  ->assertJsonStructure(['data']);
@@ -192,7 +192,7 @@ class HorarioTest extends TestCase
             'nombre_referencial' => 'Mañana - Salón A',
         ]);
 
-        $response = $this->authenticatedGet("/api/v1/academic/horarios/{$horario->id}/descripcion");
+        $response = $this->authenticatedGet("/api/academic/horarios/{$horario->id}/descripcion");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([

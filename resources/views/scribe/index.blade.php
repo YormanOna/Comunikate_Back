@@ -72,31 +72,31 @@
                 </li>
                                     <ul id="tocify-subheader-endpoints" class="tocify-subheader">
                                                     <li class="tocify-item level-2" data-unique="endpoints-POSTapi-v1-auth-iniciar-sesion">
-                                <a href="#endpoints-POSTapi-v1-auth-iniciar-sesion">POST api/v1/auth/iniciar-sesion</a>
+                                <a href="#endpoints-POSTapi-v1-auth-iniciar-sesion">POST api/auth/iniciar-sesion</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-POSTapi-v1-auth-cerrar-sesion">
-                                <a href="#endpoints-POSTapi-v1-auth-cerrar-sesion">POST api/v1/auth/cerrar-sesion</a>
+                                <a href="#endpoints-POSTapi-v1-auth-cerrar-sesion">POST api/auth/cerrar-sesion</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-v1-perfil">
-                                <a href="#endpoints-GETapi-v1-perfil">GET api/v1/perfil</a>
+                                <a href="#endpoints-GETapi-v1-perfil">GET api/perfil</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-PUTapi-v1-perfil">
-                                <a href="#endpoints-PUTapi-v1-perfil">PUT api/v1/perfil</a>
+                                <a href="#endpoints-PUTapi-v1-perfil">PUT api/perfil</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-v1-personas-estudiantes">
-                                <a href="#endpoints-GETapi-v1-personas-estudiantes">GET api/v1/personas/estudiantes</a>
+                                <a href="#endpoints-GETapi-v1-personas-estudiantes">GET api/personas/estudiantes</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-POSTapi-v1-personas-estudiantes">
-                                <a href="#endpoints-POSTapi-v1-personas-estudiantes">POST api/v1/personas/estudiantes</a>
+                                <a href="#endpoints-POSTapi-v1-personas-estudiantes">POST api/personas/estudiantes</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-v1-personas-estudiantes--id-">
-                                <a href="#endpoints-GETapi-v1-personas-estudiantes--id-">GET api/v1/personas/estudiantes/{id}</a>
+                                <a href="#endpoints-GETapi-v1-personas-estudiantes--id-">GET api/personas/estudiantes/{id}</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-PUTapi-v1-personas-estudiantes--id-">
-                                <a href="#endpoints-PUTapi-v1-personas-estudiantes--id-">PUT api/v1/personas/estudiantes/{id}</a>
+                                <a href="#endpoints-PUTapi-v1-personas-estudiantes--id-">PUT api/personas/estudiantes/{id}</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-DELETEapi-v1-personas-estudiantes--id-">
-                                <a href="#endpoints-DELETEapi-v1-personas-estudiantes--id-">DELETE api/v1/personas/estudiantes/{id}</a>
+                                <a href="#endpoints-DELETEapi-v1-personas-estudiantes--id-">DELETE api/personas/estudiantes/{id}</a>
                             </li>
                                                                         </ul>
                             </ul>
@@ -132,7 +132,7 @@ You can switch the language used with the tabs at the top right (or from the nav
 
     
 
-                                <h2 id="endpoints-POSTapi-v1-auth-iniciar-sesion">POST api/v1/auth/iniciar-sesion</h2>
+                                <h2 id="endpoints-POSTapi-v1-auth-iniciar-sesion">POST api/auth/iniciar-sesion</h2>
 
 <p>
 </p>
@@ -145,7 +145,7 @@ You can switch the language used with the tabs at the top right (or from the nav
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost/api/v1/auth/iniciar-sesion" \
+    "http://localhost/api/auth/iniciar-sesion" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -157,7 +157,7 @@ You can switch the language used with the tabs at the top right (or from the nav
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/auth/iniciar-sesion"
+    "http://localhost/api/auth/iniciar-sesion"
 );
 
 const headers = {
@@ -196,7 +196,7 @@ If you&#039;re a maintainer of ths API, verify that your API is running and you&
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-POSTapi-v1-auth-iniciar-sesion" data-method="POST"
-      data-path="api/v1/auth/iniciar-sesion"
+      data-path="api/auth/iniciar-sesion"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -224,7 +224,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-black">POST</small>
-            <b><code>api/v1/auth/iniciar-sesion</code></b>
+            <b><code>api/auth/iniciar-sesion</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -278,7 +278,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
-                    <h2 id="endpoints-POSTapi-v1-auth-cerrar-sesion">POST api/v1/auth/cerrar-sesion</h2>
+                    <h2 id="endpoints-POSTapi-v1-auth-cerrar-sesion">POST api/auth/cerrar-sesion</h2>
 
 <p>
 </p>
@@ -291,14 +291,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost/api/v1/auth/cerrar-sesion" \
+    "http://localhost/api/auth/cerrar-sesion" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/auth/cerrar-sesion"
+    "http://localhost/api/auth/cerrar-sesion"
 );
 
 const headers = {
@@ -332,7 +332,7 @@ If you&#039;re a maintainer of ths API, verify that your API is running and you&
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-POSTapi-v1-auth-cerrar-sesion" data-method="POST"
-      data-path="api/v1/auth/cerrar-sesion"
+      data-path="api/auth/cerrar-sesion"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -360,7 +360,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-black">POST</small>
-            <b><code>api/v1/auth/cerrar-sesion</code></b>
+            <b><code>api/auth/cerrar-sesion</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -389,7 +389,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="endpoints-GETapi-v1-perfil">GET api/v1/perfil</h2>
+                    <h2 id="endpoints-GETapi-v1-perfil">GET api/perfil</h2>
 
 <p>
 </p>
@@ -402,14 +402,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost/api/v1/perfil" \
+    --get "http://localhost/api/perfil" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/perfil"
+    "http://localhost/api/perfil"
 );
 
 const headers = {
@@ -460,7 +460,7 @@ If you&#039;re a maintainer of ths API, verify that your API is running and you&
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-GETapi-v1-perfil" data-method="GET"
-      data-path="api/v1/perfil"
+      data-path="api/perfil"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -488,7 +488,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-green">GET</small>
-            <b><code>api/v1/perfil</code></b>
+            <b><code>api/perfil</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -517,7 +517,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="endpoints-PUTapi-v1-perfil">PUT api/v1/perfil</h2>
+                    <h2 id="endpoints-PUTapi-v1-perfil">PUT api/perfil</h2>
 
 <p>
 </p>
@@ -530,7 +530,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/perfil" \
+    "http://localhost/api/perfil" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -545,7 +545,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/perfil"
+    "http://localhost/api/perfil"
 );
 
 const headers = {
@@ -587,7 +587,7 @@ If you&#039;re a maintainer of ths API, verify that your API is running and you&
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-PUTapi-v1-perfil" data-method="PUT"
-      data-path="api/v1/perfil"
+      data-path="api/perfil"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -615,7 +615,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-darkblue">PUT</small>
-            <b><code>api/v1/perfil</code></b>
+            <b><code>api/perfil</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -705,7 +705,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
-                    <h2 id="endpoints-GETapi-v1-personas-estudiantes">GET api/v1/personas/estudiantes</h2>
+                    <h2 id="endpoints-GETapi-v1-personas-estudiantes">GET api/personas/estudiantes</h2>
 
 <p>
 </p>
@@ -718,14 +718,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost/api/v1/personas/estudiantes" \
+    --get "http://localhost/api/personas/estudiantes" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/personas/estudiantes"
+    "http://localhost/api/personas/estudiantes"
 );
 
 const headers = {
@@ -776,7 +776,7 @@ If you&#039;re a maintainer of ths API, verify that your API is running and you&
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-GETapi-v1-personas-estudiantes" data-method="GET"
-      data-path="api/v1/personas/estudiantes"
+      data-path="api/personas/estudiantes"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -804,7 +804,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-green">GET</small>
-            <b><code>api/v1/personas/estudiantes</code></b>
+            <b><code>api/personas/estudiantes</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -833,7 +833,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="endpoints-POSTapi-v1-personas-estudiantes">POST api/v1/personas/estudiantes</h2>
+                    <h2 id="endpoints-POSTapi-v1-personas-estudiantes">POST api/personas/estudiantes</h2>
 
 <p>
 </p>
@@ -846,7 +846,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost/api/v1/personas/estudiantes" \
+    "http://localhost/api/personas/estudiantes" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -863,7 +863,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/personas/estudiantes"
+    "http://localhost/api/personas/estudiantes"
 );
 
 const headers = {
@@ -907,7 +907,7 @@ If you&#039;re a maintainer of ths API, verify that your API is running and you&
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-POSTapi-v1-personas-estudiantes" data-method="POST"
-      data-path="api/v1/personas/estudiantes"
+      data-path="api/personas/estudiantes"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -935,7 +935,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-black">POST</small>
-            <b><code>api/v1/personas/estudiantes</code></b>
+            <b><code>api/personas/estudiantes</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -1061,7 +1061,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
-                    <h2 id="endpoints-GETapi-v1-personas-estudiantes--id-">GET api/v1/personas/estudiantes/{id}</h2>
+                    <h2 id="endpoints-GETapi-v1-personas-estudiantes--id-">GET api/personas/estudiantes/{id}</h2>
 
 <p>
 </p>
@@ -1074,14 +1074,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost/api/v1/personas/estudiantes/architecto" \
+    --get "http://localhost/api/personas/estudiantes/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/personas/estudiantes/architecto"
+    "http://localhost/api/personas/estudiantes/architecto"
 );
 
 const headers = {
@@ -1132,7 +1132,7 @@ If you&#039;re a maintainer of ths API, verify that your API is running and you&
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-GETapi-v1-personas-estudiantes--id-" data-method="GET"
-      data-path="api/v1/personas/estudiantes/{id}"
+      data-path="api/personas/estudiantes/{id}"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -1202,7 +1202,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="endpoints-PUTapi-v1-personas-estudiantes--id-">PUT api/v1/personas/estudiantes/{id}</h2>
+                    <h2 id="endpoints-PUTapi-v1-personas-estudiantes--id-">PUT api/personas/estudiantes/{id}</h2>
 
 <p>
 </p>
@@ -1215,7 +1215,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/personas/estudiantes/architecto" \
+    "http://localhost/api/personas/estudiantes/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -1233,7 +1233,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/personas/estudiantes/architecto"
+    "http://localhost/api/personas/estudiantes/architecto"
 );
 
 const headers = {
@@ -1278,7 +1278,7 @@ If you&#039;re a maintainer of ths API, verify that your API is running and you&
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-PUTapi-v1-personas-estudiantes--id-" data-method="PUT"
-      data-path="api/v1/personas/estudiantes/{id}"
+      data-path="api/personas/estudiantes/{id}"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -1306,7 +1306,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-darkblue">PUT</small>
-            <b><code>api/v1/personas/estudiantes/{id}</code></b>
+            <b><code>api/personas/estudiantes/{id}</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -1480,14 +1480,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost/api/v1/personas/estudiantes/architecto" \
+    "http://localhost/api/personas/estudiantes/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/personas/estudiantes/architecto"
+    "http://localhost/api/personas/estudiantes/architecto"
 );
 
 const headers = {
@@ -1521,7 +1521,7 @@ If you&#039;re a maintainer of ths API, verify that your API is running and you&
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-DELETEapi-v1-personas-estudiantes--id-" data-method="DELETE"
-      data-path="api/v1/personas/estudiantes/{id}"
+      data-path="api/personas/estudiantes/{id}"
       data-authed="0"
       data-hasfiles="0"
       data-isarraybody="0"
@@ -1549,7 +1549,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-red">DELETE</small>
-            <b><code>api/v1/personas/estudiantes/{id}</code></b>
+            <b><code>api/personas/estudiantes/{id}</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">

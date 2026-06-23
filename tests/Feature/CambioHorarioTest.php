@@ -25,7 +25,7 @@ class CambioHorarioTest extends TestCase
     {
         CambioHorario::factory()->count(5)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/cambios-horario');
+        $response = $this->authenticatedGet('/api/academic/cambios-horario');
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -49,7 +49,7 @@ class CambioHorarioTest extends TestCase
         CambioHorario::factory()->count(3)->pendiente()->create();
         CambioHorario::factory()->count(2)->aprobado()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/cambios-horario?pendientes=true');
+        $response = $this->authenticatedGet('/api/academic/cambios-horario?pendientes=true');
 
         $response->assertStatus(200);
         
@@ -67,7 +67,7 @@ class CambioHorarioTest extends TestCase
         CambioHorario::factory()->count(2)->pendiente()->create();
         CambioHorario::factory()->count(2)->aprobado()->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/cambios-horario?estado=pendiente');
+        $response = $this->authenticatedGet('/api/academic/cambios-horario?estado=pendiente');
 
         $response->assertStatus(200);
         
@@ -93,7 +93,7 @@ class CambioHorarioTest extends TestCase
             'motivo' => 'Conflicto de horarios',
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/cambios-horario', $data);
+        $response = $this->authenticatedPost('/api/academic/cambios-horario', $data);
 
         $response->assertStatus(201)
                  ->assertJsonStructure([
@@ -113,7 +113,7 @@ class CambioHorarioTest extends TestCase
     {
         $cambio = CambioHorario::factory()->create();
 
-        $response = $this->authenticatedGet("/api/v1/academic/cambios-horario/{$cambio->id}");
+        $response = $this->authenticatedGet("/api/academic/cambios-horario/{$cambio->id}");
 
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -135,7 +135,7 @@ class CambioHorarioTest extends TestCase
             'observaciones_admin' => 'Cambio autorizado',
         ];
 
-        $response = $this->authenticatedPut("/api/v1/academic/cambios-horario/{$cambio->id}", $data);
+        $response = $this->authenticatedPut("/api/academic/cambios-horario/{$cambio->id}", $data);
 
         $response->assertStatus(200);
 
@@ -152,7 +152,7 @@ class CambioHorarioTest extends TestCase
     {
         $cambio = CambioHorario::factory()->create();
 
-        $response = $this->authenticatedDelete("/api/v1/academic/cambios-horario/{$cambio->id}");
+        $response = $this->authenticatedDelete("/api/academic/cambios-horario/{$cambio->id}");
 
         $response->assertStatus(200);
 
@@ -166,7 +166,7 @@ class CambioHorarioTest extends TestCase
     {
         $cambio = CambioHorario::factory()->pendiente()->create();
 
-        $response = $this->authenticatedPost("/api/v1/academic/cambios-horario/{$cambio->id}/aprobar");
+        $response = $this->authenticatedPost("/api/academic/cambios-horario/{$cambio->id}/aprobar");
 
         $response->assertStatus(200);
 
@@ -185,7 +185,7 @@ class CambioHorarioTest extends TestCase
 
         $data = ['observaciones_admin' => 'No hay disponibilidad'];
 
-        $response = $this->authenticatedPost("/api/v1/academic/cambios-horario/{$cambio->id}/rechazar", $data);
+        $response = $this->authenticatedPost("/api/academic/cambios-horario/{$cambio->id}/rechazar", $data);
 
         $response->assertStatus(200);
 
@@ -202,7 +202,7 @@ class CambioHorarioTest extends TestCase
     {
         $cambio = CambioHorario::factory()->aprobado()->create();
 
-        $response = $this->authenticatedPost("/api/v1/academic/cambios-horario/{$cambio->id}/completar");
+        $response = $this->authenticatedPost("/api/academic/cambios-horario/{$cambio->id}/completar");
 
         $response->assertStatus(200);
 
@@ -231,7 +231,7 @@ class CambioHorarioTest extends TestCase
             'motivo' => 'Cambio solicitado',
         ];
 
-        $response = $this->authenticatedPost('/api/v1/academic/cambios-horario', $data);
+        $response = $this->authenticatedPost('/api/academic/cambios-horario', $data);
 
         // Debería rechazar porque el curso está lleno
         $response->assertStatus(422);
@@ -244,7 +244,7 @@ class CambioHorarioTest extends TestCase
     {
         CambioHorario::factory()->count(25)->create();
 
-        $response = $this->authenticatedGet('/api/v1/academic/cambios-horario?per_page=10');
+        $response = $this->authenticatedGet('/api/academic/cambios-horario?per_page=10');
 
         $response->assertStatus(200);
         
