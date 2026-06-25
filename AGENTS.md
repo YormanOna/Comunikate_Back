@@ -336,15 +336,4 @@ GET  /perfil/cursos-completados          → View my completed courses (student)
 
 ---
 
-## References
-
-- **Full system overview**: `RESUMEN_GENERAL.md`
-- **Phase roadmap**: `ROADMAP_FASES_8_12.md`
-- **Documentation index**: `INDICE_DOCUMENTACION.md`
-- **API endpoints**: `FASE_4_RUTAS_API.md` (FASES 1-4), `FASE_7_BULK_EXPORT_REPORTS.md` (FASE 7), `FASE_10_WORKSHOPS.md`, `FASE_11_PERSONALIZED_COURSES.md`
-- **Current status**: `STATUS_ACTUAL_FASE_8.md` (updated with FASES 10-11 now at ~78% complete)
-
----
-
-**Last updated**: May 30, 2026 (FASE 11 complete)
 

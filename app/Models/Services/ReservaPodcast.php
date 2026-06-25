@@ -28,6 +28,7 @@ class ReservaPodcast extends Model
         'precio_total',
         'observaciones',
         'estado',
+        'titulo',
     ];
 
     protected function casts(): array

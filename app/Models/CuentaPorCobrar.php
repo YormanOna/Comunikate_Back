@@ -90,6 +90,38 @@ class CuentaPorCobrar extends Model
     }
 
     /**
+     * Reserva de podcast asociada
+     */
+    public function reservaPodcast(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Services\ReservaPodcast::class, 'reserva_podcast_id', 'id');
+    }
+
+    /**
+     * Reserva de aula asociada
+     */
+    public function reservaAula(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Services\ReservaAula::class, 'reserva_aula_id', 'id');
+    }
+
+    /**
+     * Alquiler de equipo asociado
+     */
+    public function alquilerEquipo(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Services\AlquilerEquipo::class, 'alquiler_equipo_id', 'id');
+    }
+
+    /**
+     * Trabajo de edición asociado
+     */
+    public function edicionVideo(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Services\TrabajoEdicion::class, 'edicion_video_id', 'id');
+    }
+
+    /**
      * Transacciones de ingreso asociadas a esta cuenta
      */
     public function transacciones(): HasMany

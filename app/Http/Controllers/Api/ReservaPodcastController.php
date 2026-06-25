@@ -7,6 +7,7 @@ use App\Models\Services\AsignacionPersonal;
 use App\Models\Services\ReservaPodcast;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 
 class ReservaPodcastController extends Controller
 {
@@ -55,6 +56,7 @@ class ReservaPodcastController extends Controller
             'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
             'precio_total' => 'required|numeric|min:0',
             'notas' => 'nullable|string',
+            'titulo' => 'nullable|string|max:255',
             'estado' => 'nullable|string|in:pendiente,reservado,confirmado,en_progreso,completado,cancelado',
             'asignaciones' => 'nullable|array',
             'asignaciones.*.persona_id' => 'required|uuid|exists:personas,id',
@@ -70,6 +72,7 @@ class ReservaPodcastController extends Controller
             'hora_fin' => $validated['hora_fin'],
             'precio_total' => $validated['precio_total'],
             'observaciones' => $validated['notas'] ?? null,
+            'titulo' => $validated['titulo'] ?? null,
             'estado' => $validated['estado'] ?? 'reservado',
         ];
 
@@ -110,6 +113,8 @@ class ReservaPodcastController extends Controller
             }
         }
 
+        Cache::forget('finance.resumen');
+
         return response()->json([
             'message' => 'Reserva creada exitosamente.',
             'data' => $this->formatReserva($reserva->fresh()->load([
@@ -143,6 +148,7 @@ class ReservaPodcastController extends Controller
             'hora_fin' => 'sometimes|date_format:H:i|after:hora_inicio',
             'precio_total' => 'sometimes|numeric|min:0',
             'notas' => 'nullable|string',
+            'titulo' => 'nullable|string|max:255',
             'estado' => 'sometimes|string|in:pendiente,reservado,confirmado,en_progreso,completado,cancelado',
             'asignaciones' => 'nullable|array',
             'asignaciones.*.persona_id' => 'required|uuid|exists:personas,id',
@@ -158,6 +164,7 @@ class ReservaPodcastController extends Controller
         if (isset($validated['hora_fin'])) $data['hora_fin'] = $validated['hora_fin'];
         if (isset($validated['precio_total'])) $data['precio_total'] = $validated['precio_total'];
         if (array_key_exists('notas', $validated)) $data['observaciones'] = $validated['notas'];
+        if (array_key_exists('titulo', $validated)) $data['titulo'] = $validated['titulo'];
         if (isset($validated['estado'])) $data['estado'] = $validated['estado'] === 'pendiente' ? 'reservado' : $validated['estado'];
 
         if (empty($data['persona_id']) && empty($data['cliente_externo_id'])) {
@@ -182,6 +189,8 @@ class ReservaPodcastController extends Controller
             }
         }
 
+        Cache::forget('finance.resumen');
+
         return response()->json([
             'message' => 'Reserva actualizada exitosamente.',
             'data' => $this->formatReserva($reserva->fresh()->load([
@@ -195,6 +204,8 @@ class ReservaPodcastController extends Controller
         $reserva = ReservaPodcast::findOrFail($id);
         $reserva->asignacionesPersonal()->delete();
         $reserva->delete();
+
+        Cache::forget('finance.resumen');
 
         return response()->json([
             'message' => 'Reserva eliminada exitosamente.',
@@ -210,6 +221,8 @@ class ReservaPodcastController extends Controller
         }
 
         $reserva->update(['estado' => 'confirmado']);
+
+        Cache::forget('finance.resumen');
 
         return response()->json([
             'message' => 'Pago registrado exitosamente.',
@@ -262,6 +275,7 @@ class ReservaPodcastController extends Controller
             'precio_total' => (float) $r->precio_total,
             'pago_registrado' => in_array($r->estado, ['confirmado', 'en_progreso', 'completado']),
             'estado' => $r->estado === 'reservado' ? 'pendiente' : $r->estado,
+            'titulo' => $r->titulo,
             'notas' => $r->observaciones,
             'asignaciones' => $asignaciones,
             'paquete' => $paquete,

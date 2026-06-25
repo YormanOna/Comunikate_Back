@@ -624,10 +624,16 @@ class FinanceController extends Controller
             });
 
             return [
-                'total_pendiente' => $saldoDeudor(clone $base) + $pendienteCursosSinCuenta + $totalTalleresSinCuenta,
+                'total_pendiente' => $saldoDeudor(clone $base)
+                    + $pendienteCursosSinCuenta
+                    + $totalTalleresSinCuenta
+                    + $totalServiciosSinCuenta,
                 'total_cobrado' => DB::table('finance.transacciones_ingreso')->where('estado_verificacion', 'aprobado')->sum('monto'),
                 'pendientes_verificacion' => TransaccionIngreso::where('estado_verificacion', 'pendiente')->count(),
-                'cuentas_con_deuda' => CuentaPorCobrar::whereIn('estado', ['pendiente', 'abonado'])->count() + $countCursosSinCuenta,
+                'cuentas_con_deuda' => CuentaPorCobrar::whereIn('estado', ['pendiente', 'abonado'])->count()
+                    + $countCursosSinCuenta
+                    + $countTalleresSinCuenta
+                    + count($serviciosItems),
                 'distribucion' => [
                     'cursos' => $saldoDeudor((clone $base)->where(fn($q) => $q->whereNotNull('matricula_id')->orWhereNotNull('solicitud_inscripcion_id'))) + $pendienteCursosSinCuenta,
                     'talleres' => $saldoDeudor((clone $base)->whereNotNull('inscripcion_taller_id')),
@@ -1258,6 +1264,72 @@ class FinanceController extends Controller
                 'modulos' => $modulosData,
                 'historial' => $transacciones,
             ]
+        ]);
+    }
+
+    public function getServicioFinanciero($tipo, $id): JsonResponse
+    {
+        $modelos = [
+            'podcast' => [\App\Models\Services\ReservaPodcast::class, 'reserva_podcast_id'],
+            'aula' => [\App\Models\Services\ReservaAula::class, 'reserva_aula_id'],
+            'equipo' => [\App\Models\Services\AlquilerEquipo::class, 'alquiler_equipo_id'],
+            'edicion' => [\App\Models\Services\TrabajoEdicion::class, 'edicion_video_id'],
+            'radio' => [\App\Models\Services\ReservaRadio::class, 'reserva_radio_id'],
+        ];
+
+        if (!isset($modelos[$tipo])) {
+            return response()->json(['message' => 'Tipo de servicio no válido'], 404);
+        }
+
+        [$modeloClass, $fkColumn] = $modelos[$tipo];
+
+        $servicio = $modeloClass::findOrFail($id);
+
+        $cuenta = CuentaPorCobrar::where($fkColumn, $id)->first();
+
+        $nombreCliente = '—';
+        if ($servicio->relationLoaded('persona') || method_exists($servicio, 'persona')) {
+            $nombreCliente = $servicio->persona
+                ? trim(($servicio->persona->nombres ?? '') . ' ' . ($servicio->persona->apellidos ?? ''))
+                : '—';
+        }
+        if ($nombreCliente === '—' && method_exists($servicio, 'clienteExterno') && $servicio->clienteExterno) {
+            $nombreCliente = trim(($servicio->clienteExterno->nombres ?? '') . ' ' . ($servicio->clienteExterno->apellidos ?? ''));
+        }
+
+        $montoTotal = (float) ($servicio->precio_total ?? 0);
+        $montoAbonado = $cuenta ? (float) ($cuenta->monto_abonado ?? 0) : 0;
+        $saldoPendiente = max(0, $montoTotal - $montoAbonado);
+
+        $nombreServicio = 'Servicio';
+        if ($tipo === 'podcast') {
+            $nombreServicio = $servicio->paquete?->nombre ?? 'Podcast';
+        } elseif ($tipo === 'aula') {
+            $nombreServicio = $servicio->aula?->nombre ?? 'Aula';
+        } elseif ($tipo === 'equipo') {
+            $nombreServicio = $servicio->equipo?->nombre ?? 'Equipo';
+        } elseif ($tipo === 'edicion') {
+            $nombreServicio = 'Edición de Video';
+        } elseif ($tipo === 'radio') {
+            $nombreServicio = 'Radio';
+        }
+
+        return response()->json([
+            'datos' => [
+                'id' => $servicio->id,
+                'tipo' => $tipo,
+                'nombre_servicio' => $nombreServicio,
+                'nombre_cliente' => $nombreCliente,
+                'fecha_reserva' => $servicio->fecha_reserva ?? null,
+                'hora_inicio' => $servicio->hora_inicio ?? null,
+                'hora_fin' => $servicio->hora_fin ?? null,
+                'monto_total' => $montoTotal,
+                'monto_abonado' => $montoAbonado,
+                'saldo_pendiente' => $saldoPendiente,
+                'estado' => $servicio->estado ?? '—',
+                'cuenta_cobrar_id' => $cuenta?->id,
+                'cuenta_estado' => $cuenta?->estado ?? 'pendiente',
+            ],
         ]);
     }
 }

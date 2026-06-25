@@ -613,6 +613,7 @@ Route::prefix('reports')->group(function () {
         Route::get('cursos/{cursoId}/estudiante/{matriculaId}/financiero', [FinanceController::class, 'getEstudianteFinancieroCurso'])->name('finanzas.cursos.estudiante.financiero');
         Route::get('cursos/{id}/financiero', [FinanceController::class, 'getCursoFinanciero'])->name('finanzas.cursos.financiero');
         Route::get('talleres/{id}/financiero', [FinanceController::class, 'getTallerFinanciero'])->name('finanzas.talleres.financiero');
+        Route::get('servicios/{tipo}/{id}/financiero', [FinanceController::class, 'getServicioFinanciero'])->name('finanzas.servicios.financiero');
         Route::get('matriculas/{matriculaId}/lineas-pago', [FinanceController::class, 'getLineasPagoPorMatricula'])->name('finanzas.matriculas.lineas-pago');
         Route::get('talleres/{tallerId}/participante/{participanteId}', [FinanceController::class, 'getHistorialParticipanteTaller'])->name('finanzas.talleres.participante');
     });
