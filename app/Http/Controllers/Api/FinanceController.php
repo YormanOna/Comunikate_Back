@@ -144,7 +144,15 @@ class FinanceController extends Controller
 
             $matriculaIds = $lineasAgrupadas->pluck('matricula_id')->toArray();
             if (! empty($matriculaIds)) {
-                $matriculas = Matricula::with(['estudiante', 'cursoAbierto.catalogo'])
+                $matriculas = Matricula::with([
+                        'estudiante',
+                        'solicitudInscripcion.estudiante',
+                        'solicitudInscripcion.participanteExterno',
+                        'cursoAbierto.catalogo',
+                        'cursoAbierto.docente',
+                        'cursoAbierto.ciudad',
+                        'lineasPago.modulo',
+                    ])
                     ->whereIn('id', $matriculaIds)
                     ->get()
                     ->keyBy('id');
@@ -156,6 +164,45 @@ class FinanceController extends Controller
                         2 => 'abonado',
                         default => 'pendiente',
                     };
+
+                    $lineasDetalle = $matricula?->lineasPago
+                        ? $matricula->lineasPago->sortBy('orden')->map(fn($lp) => [
+                            'id' => $lp->id,
+                            'modulo_id' => $lp->modulo_id,
+                            'nombre_modulo' => $lp->modulo?->nombre_modulo ?? ('M\u00f3dulo ' . ($lp->orden + 1)),
+                            'numero_orden' => $lp->modulo?->numero_orden ?? $lp->orden,
+                            'monto_ajustado' => (float) $lp->monto_ajustado,
+                            'monto_abonado' => (float) $lp->monto_abonado,
+                            'saldo_pendiente' => (float) $lp->saldo_pendiente,
+                            'estado' => $lp->estado,
+                        ])->values()->toArray()
+                        : [];
+
+                    $instructorNombre = $matricula?->cursoAbierto?->docente
+                        ? trim(($matricula->cursoAbierto->docente->nombres ?? '') . ' ' . ($matricula->cursoAbierto->docente->apellidos ?? ''))
+                        : null;
+
+                    $cursoAbierto = $matricula?->cursoAbierto;
+                    if ($cursoAbierto) {
+                        if ($cursoAbierto->nombre_instancia) {
+                            $cursoNombre = $cursoAbierto->nombre_instancia;
+                        } else {
+                            $partes = [$cursoAbierto->catalogo?->nombre];
+                            if ($cursoAbierto->ciudad?->nombre) {
+                                $partes[] = $cursoAbierto->ciudad->nombre;
+                            }
+                            if ($cursoAbierto->fecha_inicio) {
+                                $meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                                $partes[] = $meses[$cursoAbierto->fecha_inicio->month - 1] . ' ' . $cursoAbierto->fecha_inicio->year;
+                            }
+                            if ($cursoAbierto->modalidad) {
+                                $partes[] = ucfirst($cursoAbierto->modalidad);
+                            }
+                            $cursoNombre = implode(' — ', $partes);
+                        }
+                    } else {
+                        $cursoNombre = 'Curso';
+                    }
 
                     $cursosSinCuenta->push((object) [
                         'id' => 'lpm-' . $l->matricula_id,
@@ -172,6 +219,17 @@ class FinanceController extends Controller
                         'solicitud_inscripcion' => null,
                         'inscripcion_taller' => null,
                         '_origen' => 'lineas_pago',
+                        'curso_nombre' => $cursoNombre,
+                        'curso_abierto_id' => $cursoAbierto?->id,
+                        'lineas_pago' => $lineasDetalle,
+                        'persona_nombre' => $matricula?->estudiante
+                            ? trim(($matricula->estudiante->nombres ?? '') . ' ' . ($matricula->estudiante->apellidos ?? ''))
+                            : ($matricula?->solicitudInscripcion?->estudiante
+                                ? trim(($matricula->solicitudInscripcion->estudiante->nombres ?? '') . ' ' . ($matricula->solicitudInscripcion->estudiante->apellidos ?? ''))
+                                : ($matricula?->solicitudInscripcion?->participanteExterno?->nombres
+                                    ? trim(($matricula->solicitudInscripcion->participanteExterno->nombres ?? '') . ' ' . ($matricula->solicitudInscripcion->participanteExterno->apellidos ?? ''))
+                                    : '')),
+                        'instructor_nombre' => $instructorNombre,
                     ]);
                 }
             }
@@ -484,7 +542,7 @@ class FinanceController extends Controller
 
             if (! empty($matriculasIdsCursosSinCuenta)) {
                 $matriculasData = Matricula::with([
-                        'estudiante', 'cursoAbierto.catalogo', 'lineasPago.modulo',
+                        'estudiante', 'solicitudInscripcion.estudiante', 'solicitudInscripcion.participanteExterno', 'cursoAbierto.catalogo', 'cursoAbierto.docente', 'cursoAbierto.ciudad', 'lineasPago.modulo',
                     ])
                     ->whereIn('id', $matriculasIdsCursosSinCuenta)
                     ->get()
@@ -493,6 +551,45 @@ class FinanceController extends Controller
                 foreach ($cursosSinCuentaRaw as $csc) {
                     $m = $matriculasData->get($csc->matricula_id);
                     $saldo = max(0, (float) $csc->monto_total - (float) $csc->monto_abonado);
+
+                    $lineasDetalle = $m?->lineasPago
+                        ? $m->lineasPago->sortBy('orden')->map(fn($lp) => [
+                            'id' => $lp->id,
+                            'modulo_id' => $lp->modulo_id,
+                            'nombre_modulo' => $lp->modulo?->nombre_modulo ?? ('M\u00f3dulo ' . ($lp->orden + 1)),
+                            'numero_orden' => $lp->modulo?->numero_orden ?? $lp->orden,
+                            'monto_ajustado' => (float) $lp->monto_ajustado,
+                            'monto_abonado' => (float) $lp->monto_abonado,
+                            'saldo_pendiente' => (float) $lp->saldo_pendiente,
+                            'estado' => $lp->estado,
+                        ])->values()->toArray()
+                        : [];
+
+                    $instructorNombre = $m?->cursoAbierto?->docente
+                        ? trim(($m->cursoAbierto->docente->nombres ?? '') . ' ' . ($m->cursoAbierto->docente->apellidos ?? ''))
+                        : null;
+
+                    $cursoAbierto = $m?->cursoAbierto;
+                    if ($cursoAbierto) {
+                        if ($cursoAbierto->nombre_instancia) {
+                            $cursoNombre = $cursoAbierto->nombre_instancia;
+                        } else {
+                            $partes = [$cursoAbierto->catalogo?->nombre];
+                            if ($cursoAbierto->ciudad?->nombre) {
+                                $partes[] = $cursoAbierto->ciudad->nombre;
+                            }
+                            if ($cursoAbierto->fecha_inicio) {
+                                $meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                                $partes[] = $meses[$cursoAbierto->fecha_inicio->month - 1] . ' ' . $cursoAbierto->fecha_inicio->year;
+                            }
+                            if ($cursoAbierto->modalidad) {
+                                $partes[] = ucfirst($cursoAbierto->modalidad);
+                            }
+                            $cursoNombre = implode(' — ', $partes);
+                        }
+                    } else {
+                        $cursoNombre = 'Curso';
+                    }
 
                     $cursosSinCuentaItems[] = [
                         'id' => 'lpm-' . $csc->matricula_id,
@@ -504,8 +601,17 @@ class FinanceController extends Controller
                         'modalidad' => $m?->cursoAbierto?->modalidad ?? null,
                         'matricula' => $m,
                         'solicitud_inscripcion' => null,
-                        'curso_nombre' => $m?->cursoAbierto?->catalogo?->nombre ?? 'Curso',
-                        'persona_nombre' => $m?->estudiante ? trim(($m->estudiante->nombres ?? '') . ' ' . ($m->estudiante->apellidos ?? '')) : '',
+                        'curso_nombre' => $cursoNombre,
+                        'curso_abierto_id' => $m?->cursoAbierto?->id,
+                        'persona_nombre' => $m?->estudiante
+                            ? trim(($m->estudiante->nombres ?? '') . ' ' . ($m->estudiante->apellidos ?? ''))
+                            : ($m?->solicitudInscripcion?->estudiante
+                                ? trim(($m->solicitudInscripcion->estudiante->nombres ?? '') . ' ' . ($m->solicitudInscripcion->estudiante->apellidos ?? ''))
+                                : ($m?->solicitudInscripcion?->participanteExterno?->nombres
+                                    ? trim(($m->solicitudInscripcion->participanteExterno->nombres ?? '') . ' ' . ($m->solicitudInscripcion->participanteExterno->apellidos ?? ''))
+                                    : '')),
+                        'lineas_pago' => $lineasDetalle,
+                        'instructor_nombre' => $instructorNombre,
                     ];
 
                     $totalCursosSinCuenta += $saldo;
@@ -518,7 +624,7 @@ class FinanceController extends Controller
             });
 
             return [
-                'total_pendiente' => $saldoDeudor(clone $base) + $pendienteCursosSinCuenta,
+                'total_pendiente' => $saldoDeudor(clone $base) + $pendienteCursosSinCuenta + $totalTalleresSinCuenta,
                 'total_cobrado' => DB::table('finance.transacciones_ingreso')->where('estado_verificacion', 'aprobado')->sum('monto'),
                 'pendientes_verificacion' => TransaccionIngreso::where('estado_verificacion', 'pendiente')->count(),
                 'cuentas_con_deuda' => CuentaPorCobrar::whereIn('estado', ['pendiente', 'abonado'])->count() + $countCursosSinCuenta,
@@ -626,9 +732,18 @@ class FinanceController extends Controller
         return response()->json($transacciones);
     }
 
+    public function uploadComprobantePago(Request $request): JsonResponse
+    {
+        $request->validate(['archivo' => 'required|file|image|max:5120']);
+        $file = $request->file('archivo');
+        $filename = \Illuminate\Support\Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('comprobantes', $filename, 'public');
+        return response()->json(['data' => ['url' => '/storage/' . $path]], 201);
+    }
+
     public function registrarPagosIniciales(StorePagoInicialRequest $request): JsonResponse
     {
-        return DB::transaction(function () use ($request) {
+        $response = DB::transaction(function () use ($request) {
             $resultados = [];
 
             foreach ($request->pagos as $pago) {
@@ -673,6 +788,9 @@ class FinanceController extends Controller
                 'pagos' => $resultados,
             ], 201);
         });
+
+        Cache::forget('finance.resumen');
+        return $response;
     }
 
     public function verificarTransaccion(Request $request, $id): JsonResponse
@@ -708,6 +826,8 @@ class FinanceController extends Controller
         $query = TransaccionIngreso::with([
             'lineaPagoModulo.modulo',
             'lineaPagoModulo.matricula.estudiante',
+            'lineaPagoModulo.matricula.solicitudInscripcion.estudiante',
+            'lineaPagoModulo.matricula.solicitudInscripcion.participanteExterno',
             'lineaPagoModulo.matricula.cursoAbierto.catalogo',
             'cuentaPorCobrar.matricula.estudiante',
             'cuentaPorCobrar.matricula.cursoAbierto.catalogo',
@@ -721,14 +841,17 @@ class FinanceController extends Controller
         $perPage = (int) $request->get('per_page', 30);
         $transacciones = $query->paginate($perPage);
 
-        $items = collect($transacciones->items())->map(function ($t) {
+        $rawItems = collect($transacciones->items())->map(function ($t) {
             $estudiante = null;
             $cursoNombre = null;
             $moduloNombre = null;
 
             if ($t->lineaPagoModulo) {
-                $estudiante = $t->lineaPagoModulo->matricula?->estudiante;
-                $cursoNombre = $t->lineaPagoModulo->matricula?->cursoAbierto?->catalogo?->nombre;
+                $mat = $t->lineaPagoModulo->matricula;
+                $estudiante = $mat?->estudiante
+                    ?? $mat?->solicitudInscripcion?->estudiante
+                    ?? $mat?->solicitudInscripcion?->participanteExterno;
+                $cursoNombre = $mat?->cursoAbierto?->catalogo?->nombre;
                 $moduloNombre = $t->lineaPagoModulo->modulo?->nombre_modulo;
             } elseif ($t->cuentaPorCobrar) {
                 $estudiante = $t->cuentaPorCobrar->matricula?->estudiante;
@@ -737,6 +860,7 @@ class FinanceController extends Controller
 
             return [
                 'id' => $t->id,
+                'referencia_pago' => $t->referencia_pago,
                 'monto' => (float) $t->monto,
                 'metodo_pago' => $t->metodo_pago,
                 'fecha_pago' => $t->fecha_pago?->toISOString(),
@@ -749,8 +873,58 @@ class FinanceController extends Controller
             ];
         });
 
+        $grouped = [];
+        foreach ($rawItems as $item) {
+            $ref = $item['referencia_pago'];
+            if ($ref) {
+                if (!isset($grouped[$ref])) {
+                    $grouped[$ref] = [];
+                }
+                $grouped[$ref][] = $item;
+            } else {
+                $grouped[] = [$item];
+            }
+        }
+
+        $data = [];
+        foreach ($grouped as $key => $grupo) {
+            if (is_string($key) && count($grupo) > 1) {
+                $modulosDetalle = collect($grupo)->map(fn($t) => [
+                    'id' => $t['id'],
+                    'modulo_nombre' => $t['modulo_nombre'],
+                    'monto' => $t['monto'],
+                ])->values()->toArray();
+
+                $first = $grupo[0];
+                $data[] = [
+                    'id' => $key,
+                    'tipo' => 'grupo',
+                    'estudiante_nombre' => $first['estudiante_nombre'],
+                    'curso_nombre' => $first['curso_nombre'],
+                    'monto_total' => collect($grupo)->sum('monto'),
+                    'metodo_pago' => $first['metodo_pago'],
+                    'fecha_pago' => $first['fecha_pago'],
+                    'estado_verificacion' => $first['estado_verificacion'],
+                    'comprobante_url' => $first['comprobante_url'],
+                    'observaciones' => $first['observaciones'],
+                    'modulos_count' => count($grupo),
+                    'modulos_detalle' => $modulosDetalle,
+                ];
+            } else {
+                $single = is_string($key) ? $grupo[0] : $grupo[0];
+                $data[] = array_merge($single, [
+                    'tipo' => 'individual',
+                    'monto_total' => $single['monto'],
+                    'modulos_count' => $single['modulo_nombre'] ? 1 : 0,
+                    'modulos_detalle' => $single['modulo_nombre']
+                        ? [['id' => $single['id'], 'modulo_nombre' => $single['modulo_nombre'], 'monto' => $single['monto']]]
+                        : [],
+                ]);
+            }
+        }
+
         return response()->json([
-            'data' => $items,
+            'data' => $data,
             'current_page' => $transacciones->currentPage(),
             'per_page' => $transacciones->perPage(),
             'total' => $transacciones->total(),
@@ -763,6 +937,8 @@ class FinanceController extends Controller
         $t = TransaccionIngreso::with([
             'lineaPagoModulo.modulo',
             'lineaPagoModulo.matricula.estudiante',
+            'lineaPagoModulo.matricula.solicitudInscripcion.estudiante',
+            'lineaPagoModulo.matricula.solicitudInscripcion.participanteExterno',
             'lineaPagoModulo.matricula.cursoAbierto.catalogo',
             'cuentaPorCobrar.matricula.estudiante',
             'cuentaPorCobrar.matricula.cursoAbierto.catalogo',
@@ -777,8 +953,11 @@ class FinanceController extends Controller
         $tallerNombre = null;
 
         if ($t->lineaPagoModulo) {
-            $estudiante = $t->lineaPagoModulo->matricula?->estudiante;
-            $cursoNombre = $t->lineaPagoModulo->matricula?->cursoAbierto?->catalogo?->nombre;
+            $mat = $t->lineaPagoModulo->matricula;
+            $estudiante = $mat?->estudiante
+                ?? $mat?->solicitudInscripcion?->estudiante
+                ?? $mat?->solicitudInscripcion?->participanteExterno;
+            $cursoNombre = $mat?->cursoAbierto?->catalogo?->nombre;
             $moduloNombre = $t->lineaPagoModulo->modulo?->nombre_modulo;
         } elseif ($t->cuentaPorCobrar) {
             $estudiante = $t->cuentaPorCobrar->matricula?->estudiante
@@ -816,7 +995,7 @@ class FinanceController extends Controller
         ])->findOrFail($id);
 
         $matriculas = Matricula::with([
-            'estudiante', 'lineasPago.modulo',
+            'estudiante', 'solicitudInscripcion.estudiante', 'solicitudInscripcion.participanteExterno', 'lineasPago.modulo',
         ])->where('curso_abierto_id', $id)->get();
 
         $modulos = $curso->modulos;
@@ -826,7 +1005,9 @@ class FinanceController extends Controller
         $totalRecaudadoReal = 0;
 
         foreach ($matriculas as $matricula) {
-            $est = $matricula->estudiante;
+            $est = $matricula->estudiante
+                ?? $matricula->solicitudInscripcion?->estudiante
+                ?? $matricula->solicitudInscripcion?->participanteExterno;
             $filasModulos = [];
             $totalPagadoEstudiante = 0;
 
@@ -851,12 +1032,16 @@ class FinanceController extends Controller
                 $totalPagadoEstudiante += $abonado;
             }
 
+            $esExterno = $est && $est instanceof \App\Models\ClienteExterno;
+
             $estudiantesData[] = [
                 'matricula_id' => $matricula->id,
-                'nombre' => $est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : '—',
-                'cedula' => $est->cedula ?? '—',
-                'telefono' => $est->celular ?? '—',
-                'ciudad' => $est->ciudad?->nombre ?? '—',
+                'nombre' => $est
+                    ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? ''))
+                    : '—',
+                'cedula' => $est?->cedula ?? '—',
+                'telefono' => $est?->celular ?? $est?->telefono ?? '—',
+                'ciudad' => $est?->ciudad?->nombre ?? $est?->ciudad ?? '—',
                 'modulos' => $filasModulos,
                 'total_pagado' => $totalPagadoEstudiante,
             ];
@@ -867,17 +1052,31 @@ class FinanceController extends Controller
             $totalRecaudadoReal += $totalPagadoEstudiante;
         }
 
+        $horarioStr = '—';
+        if ($curso->horario) {
+            $dias = $curso->horario->diasSemana
+                ->filter(fn($d) => !empty($d->nombre_dia))
+                ->pluck('nombre_dia')
+                ->map(fn($d) => ucfirst($d))
+                ->join(', ');
+            $horaIni = $curso->horario->hora_inicio ? substr($curso->horario->hora_inicio, 0, 5) : '';
+            $horaFin = $curso->horario->hora_fin ? substr($curso->horario->hora_fin, 0, 5) : '';
+            if ($horaIni) {
+                $horarioStr = ($dias ? $dias . ' ' : '') . $horaIni . ($horaFin ? ' - ' . $horaFin : '');
+            }
+        }
+
         return response()->json([
             'datos' => [
                 'curso' => [
                     'id' => $curso->id,
-                    'nombre' => $curso->catalogo?->nombre ?? 'Curso',
+                    'nombre' => $curso->nombre_instancia ?? $curso->catalogo?->nombre ?? 'Curso',
                     'nombre_instancia' => $curso->nombre_instancia,
                     'instructor' => $curso->docente ? trim(($curso->docente->nombres ?? '') . ' ' . ($curso->docente->apellidos ?? '')) : '—',
                     'fecha_inicio' => $curso->fecha_inicio?->format('Y-m-d'),
                     'fecha_fin' => $curso->fecha_fin?->format('Y-m-d'),
                     'ciudad' => $curso->ciudad?->nombre ?? '—',
-                    'horario' => $curso->horario?->nombre_referencial ?? '—',
+                    'horario' => $horarioStr,
                     'modalidad' => $curso->modalidad,
                 ],
                 'modulos' => $modulos->map(fn($m) => [
@@ -947,6 +1146,27 @@ class FinanceController extends Controller
         ]);
     }
 
+    public function getLineasPagoPorMatricula($matriculaId): JsonResponse
+    {
+        $lineas = LineaPagoModulo::with('modulo')
+            ->where('matricula_id', $matriculaId)
+            ->orderBy('orden')
+            ->get()
+            ->map(fn($lp) => [
+                'id' => $lp->id,
+                'modulo_id' => $lp->modulo_id,
+                'nombre_modulo' => $lp->modulo?->nombre_modulo ?? ('Módulo ' . ($lp->orden + 1)),
+                'numero_orden' => $lp->modulo?->numero_orden ?? $lp->orden,
+                'monto_original' => (float) $lp->monto_original,
+                'monto_ajustado' => (float) $lp->monto_ajustado,
+                'monto_abonado' => (float) $lp->monto_abonado,
+                'saldo_pendiente' => (float) $lp->saldo_pendiente,
+                'estado' => $lp->estado,
+            ]);
+
+        return response()->json(['datos' => $lineas]);
+    }
+
     public function getHistorialParticipanteTaller($tallerId, $participanteId): JsonResponse
     {
         $inscripcion = InscripcionTaller::where('taller_id', $tallerId)
@@ -979,6 +1199,64 @@ class FinanceController extends Controller
                     'monto_pagado' => (float) ($inscripcion->monto_pagado ?? $inscripcion->precio_pagado ?? 0),
                 ],
                 'transacciones' => $transacciones,
+            ]
+        ]);
+    }
+
+    public function getEstudianteFinancieroCurso($cursoId, $matriculaId): JsonResponse
+    {
+        $curso = \App\Models\CursoAbierto::with('catalogo')->findOrFail($cursoId);
+        $matricula = Matricula::with([
+            'estudiante',
+            'solicitudInscripcion.estudiante',
+            'solicitudInscripcion.participanteExterno',
+            'lineasPago.modulo',
+        ])->findOrFail($matriculaId);
+
+        $est = $matricula->estudiante
+            ?? $matricula->solicitudInscripcion?->estudiante
+            ?? $matricula->solicitudInscripcion?->participanteExterno;
+
+        $modulosData = $matricula->lineasPago
+            ->sortBy('orden')
+            ->map(fn($lp) => [
+                'linea_pago_modulo_id' => $lp->id,
+                'modulo_id' => $lp->modulo_id,
+                'nombre_modulo' => $lp->modulo?->nombre_modulo ?? ('Módulo ' . ($lp->orden + 1)),
+                'numero_orden' => $lp->modulo?->numero_orden ?? $lp->orden,
+                'monto_ajustado' => (float) $lp->monto_ajustado,
+                'monto_abonado' => (float) $lp->monto_abonado,
+                'saldo_pendiente' => (float) $lp->saldo_pendiente,
+                'estado' => $lp->estado,
+            ])->values();
+
+        $transacciones = TransaccionIngreso::whereHas('lineaPagoModulo', fn($q) => $q->where('matricula_id', $matriculaId))
+            ->with(['lineaPagoModulo.modulo', 'registrador'])
+            ->orderBy('fecha_pago', 'desc')
+            ->get()
+            ->map(fn($t) => [
+                'id' => $t->id,
+                'monto' => (float) $t->monto,
+                'metodo_pago' => $t->metodo_pago,
+                'fecha_pago' => $t->fecha_pago?->format('Y-m-d H:i'),
+                'estado_verificacion' => $t->estado_verificacion,
+                'comprobante_url' => $t->comprobante_url,
+                'modulo_nombre' => $t->lineaPagoModulo?->modulo?->nombre_modulo ?? null,
+                'referencia_pago' => $t->referencia_pago,
+            ]);
+
+        return response()->json([
+            'datos' => [
+                'estudiante' => [
+                    'nombre' => $est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : '—',
+                    'cedula' => $est?->cedula ?? '—',
+                ],
+                'curso' => [
+                    'id' => $curso->id,
+                    'nombre' => $curso->catalogo?->nombre ?? 'Curso',
+                ],
+                'modulos' => $modulosData,
+                'historial' => $transacciones,
             ]
         ]);
     }

@@ -116,13 +116,15 @@ class StaffRegistrationController extends Controller
 
         // Obtener el validador (sin restricción de rol por ahora)
         $validador = auth()->user();
-        $validadorPersonaId = ($validador instanceof Persona) ? $validador->id : null;
+        $validadorPersonaId = auth()->user()->persona_id ?? null;
 
         // Usar el servicio para aprobar
         $resultado = $this->stateService->approve(
             $solicitud,
             $validadorPersonaId,
-            $request->observaciones_validacion
+            $request->observaciones_validacion,
+            $request->pagos ?? [],
+            $request->metodo_pago ?? 'efectivo'
         );
 
         if (!$resultado['exito']) {
@@ -218,6 +220,35 @@ class StaffRegistrationController extends Controller
      */
     private function formatearSolicitudDetallada(SolicitudInscripcion $solicitud): array
     {
+        $lineasPago = null;
+        if ($solicitud->estado === SolicitudInscripcion::ESTADO_MATRICULA_CREADA) {
+            $matricula = \App\Models\Matricula::with('lineasPago.modulo')
+                ->where('solicitud_inscripcion_id', $solicitud->id)
+                ->first();
+            if ($matricula?->lineasPago) {
+                $totalAbonado = 0;
+                $totalEsperado = 0;
+                $lineas = $matricula->lineasPago->sortBy('orden')->map(function ($lp) use (&$totalAbonado, &$totalEsperado) {
+                    $totalAbonado += (float) $lp->monto_abonado;
+                    $totalEsperado += (float) $lp->monto_ajustado;
+                    return [
+                        'modulo_nombre' => $lp->modulo?->nombre_modulo ?? 'Módulo',
+                        'monto_ajustado' => (float) $lp->monto_ajustado,
+                        'monto_abonado' => (float) $lp->monto_abonado,
+                        'saldo' => max(0, (float) $lp->monto_ajustado - (float) $lp->monto_abonado),
+                        'estado' => $lp->estado,
+                    ];
+                })->values()->toArray();
+                $lineasPago = [
+                    'modulos' => $lineas,
+                    'total_abonado' => $totalAbonado,
+                    'total_esperado' => $totalEsperado,
+                    'modulos_count' => count($lineas),
+                    'modulos_pagados' => $matricula->lineasPago->filter(fn($lp) => $lp->estaPagada())->count(),
+                ];
+            }
+        }
+
         return [
             'id' => $solicitud->id,
             'solicitante' => [
@@ -260,6 +291,7 @@ class StaffRegistrationController extends Controller
                     'fecha_pago_declarada' => $solicitud->fecha_pago_declarada,
                 ],
             ],
+            'lineas_pago' => $lineasPago,
             'estado' => [
                 'valor' => $solicitud->estado,
                 'descripcion' => $solicitud->obtenerDescripcionEstado(),

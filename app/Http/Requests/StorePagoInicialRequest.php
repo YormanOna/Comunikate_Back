@@ -17,12 +17,12 @@ class StorePagoInicialRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'matricula_id' => 'required|uuid|exists:academic.matriculas,id',
+            'matricula_id' => 'required|uuid|exists:pgsql.matriculas,id',
             'pagos' => 'required|array|min:1',
             'pagos.*.linea_pago_modulo_id' => [
                 'required',
                 'uuid',
-                Rule::exists('finance.lineas_pago_modulo', 'id')
+                Rule::exists('pgsql.lineas_pago_modulo', 'id')
                     ->where('matricula_id', $this->input('matricula_id')),
             ],
             'pagos.*.monto' => [
@@ -52,9 +52,9 @@ class StorePagoInicialRequest extends FormRequest
             ],
             'pagos.*.monto_ajustado' => 'nullable|numeric|min:0',
             'pagos.*.motivo_ajuste' => 'required_with:pagos.*.monto_ajustado|nullable|string|max:255',
-            'pagos.*.metodo_pago' => 'required|string|in:efectivo,transferencia,deposito,tarjeta,otro',
+            'pagos.*.metodo_pago' => 'required|string|in:efectivo,transferencia',
             'pagos.*.fecha_pago' => 'nullable|date',
-            'pagos.*.comprobante_url' => 'nullable|url',
+            'pagos.*.comprobante_url' => 'nullable|string',
         ];
     }
 

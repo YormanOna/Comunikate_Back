@@ -7,7 +7,9 @@ use App\Models\Matricula;
 use App\Models\CuentaPorCobrar;
 use App\Models\Finance\LineaPagoModulo;
 use App\Models\Persona;
+use App\Models\TransaccionIngreso;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class RegistrationStateService
@@ -75,10 +77,15 @@ class RegistrationStateService
      * @param string|null $observaciones
      * @return array ['exito' => bool, 'mensaje' => string, 'matricula_id' => string|null, 'cuenta_cobrar_id' => string|null]
      */
-    public function approve(SolicitudInscripcion $solicitud, $validadorId = null, ?string $observaciones = null): array
+    public function approve(
+        SolicitudInscripcion $solicitud,
+        $validadorId = null,
+        ?string $observaciones = null,
+        array $pagos = [],
+        string $metodoPago = 'efectivo'
+    ): array
     {
         try {
-            // Validar estado actual
             if ($solicitud->estado !== SolicitudInscripcion::ESTADO_PENDIENTE_VALIDACION) {
                 return [
                     'exito' => false,
@@ -88,34 +95,79 @@ class RegistrationStateService
                 ];
             }
 
-            return DB::transaction(function () use ($solicitud, $validadorId, $observaciones) {
-                // 1. Actualizar estado a aprobado
+            return DB::transaction(function () use ($solicitud, $validadorId, $observaciones, $pagos, $metodoPago) {
                 $solicitud->estado = SolicitudInscripcion::ESTADO_APROBADO;
                 $solicitud->validado_por = $validadorId ?? null;
                 $solicitud->observaciones_validacion = $observaciones;
                 $solicitud->fecha_validacion = now();
                 $solicitud->save();
 
-                // 2. Crear matrícula
                 $matricula = $this->crearMatricula($solicitud);
                 if (! $matricula) {
                     throw new Exception('No se pudo crear la matrícula');
                 }
 
-                // 3. Crear líneas de pago por módulo
                 $lineasPago = $this->crearLineasPagoModulo($solicitud, $matricula);
 
-                // 4. Marcar cuentas legacy existentes
                 CuentaPorCobrar::where('matricula_id', $matricula->id)
                     ->update(['es_legacy' => true]);
 
-                // 5. Actualizar estado a matricula_creada
                 $solicitud->estado = SolicitudInscripcion::ESTADO_MATRICULA_CREADA;
                 $solicitud->save();
 
+                $referencia = 'mat-' . $matricula->id . '-' . now()->timestamp;
+
+                if (! empty($pagos)) {
+                    $modulos = $solicitud->cursoAbierto->modulos()->orderBy('numero_orden')->get()->keyBy('id');
+                    $lineasPorModulo = collect($lineasPago)->keyBy('modulo_id');
+
+                    foreach ($pagos as $pago) {
+                        if (empty($pago['monto']) || (float) $pago['monto'] <= 0) {
+                            continue;
+                        }
+
+                        $linea = $lineasPorModulo->get($pago['modulo_id']);
+                        if (! $linea) continue;
+
+                        if (! empty($pago['monto_ajustado']) && (float) $pago['monto_ajustado'] != $linea->monto_ajustado) {
+                            $linea->update([
+                                'monto_ajustado' => (float) $pago['monto_ajustado'],
+                                'motivo_ajuste' => $pago['motivo_ajuste'] ?? null,
+                                'ajustado_por' => $validadorId ?? auth()->user()->persona_id ?? null,
+                                'fecha_ajuste' => now(),
+                            ]);
+                            $linea->refresh();
+                        }
+
+                        TransaccionIngreso::create([
+                            'linea_pago_modulo_id' => $linea->id,
+                            'monto' => (float) $pago['monto'],
+                            'metodo_pago' => $metodoPago,
+                            'comprobante_url' => $solicitud->archivo_comprobante_url,
+                            'fecha_pago' => now(),
+                            'registrado_por' => $validadorId ?? auth()->user()->persona_id ?? null,
+                            'verificado_por' => $validadorId ?? auth()->user()->persona_id ?? null,
+                            'fecha_verificacion' => now(),
+                            'estado_verificacion' => TransaccionIngreso::VERIFICACION_APROBADO,
+                            'referencia_pago' => $referencia,
+                        ]);
+                    }
+                }
+
+                if (! empty($pagos)) {
+                    $totalPagado = collect($pagos)->sum('monto');
+                    $totalEsperado = collect($lineasPago)->sum('monto_ajustado');
+                    $solicitud->update([
+                        'monto_solicitado' => $totalPagado,
+                        'tipo_pago' => $totalPagado >= $totalEsperado ? 'completo' : 'abono',
+                    ]);
+                }
+
+                Cache::forget('finance.resumen');
+
                 return [
                     'exito' => true,
-                    'mensaje' => 'Solicitud aprobada correctamente. Matrícula creada.',
+                    'mensaje' => 'Solicitud aprobada y pago registrado correctamente',
                     'matricula_id' => $matricula->id,
                     'cuenta_cobrar_id' => null,
                     'lineas_pago_ids' => collect($lineasPago)->pluck('id')->toArray(),

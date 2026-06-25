@@ -24,18 +24,24 @@ class ValidateRegistrationRequest extends FormRequest
     {
         return [
             'observaciones_validacion' => 'nullable|string|max:500',
+            'pagos' => 'nullable|array',
+            'pagos.*.modulo_id' => 'required_with:pagos|uuid|exists:pgsql.modulos,id',
+            'pagos.*.monto' => 'required_with:pagos|numeric|min:0.01',
+            'pagos.*.monto_ajustado' => 'nullable|numeric|min:0',
+            'pagos.*.motivo_ajuste' => 'required_with:pagos.*.monto_ajustado|nullable|string|max:255',
+            'metodo_pago' => 'nullable|string|in:efectivo,transferencia,deposito,tarjeta,otro',
         ];
     }
 
-    /**
-     * Get custom messages for validator errors.
-     *
-     * @return array<string, string>
-     */
     public function messages(): array
     {
         return [
             'observaciones_validacion.max' => 'Las observaciones no pueden exceder 500 caracteres',
+            'pagos.*.modulo_id.required' => 'El ID del módulo es obligatorio para cada pago',
+            'pagos.*.modulo_id.exists' => 'El módulo seleccionado no existe',
+            'pagos.*.monto.required' => 'El monto es obligatorio para cada pago',
+            'pagos.*.monto.min' => 'El monto mínimo es 0.01',
+            'metodo_pago.in' => 'El método de pago no es válido',
         ];
     }
 }

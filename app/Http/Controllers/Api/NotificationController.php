@@ -35,8 +35,9 @@ class NotificationController extends Controller
                     'curso' => $s->cursoAbierto?->catalogo?->nombre ?? 'Sin curso',
                     'color' => $s->cursoAbierto?->catalogo?->color,
                     'monto' => (float) $s->monto_solicitado,
+                    'metodo_pago' => $s->tipo_comprobante,
                     'fecha_creacion' => $s->created_at,
-                    'hora' => Carbon::parse($s->created_at)->format('H:i'),
+                    'hora' => Carbon::parse($s->created_at)->timezone('America/Guayaquil')->format('H:i'),
                 ];
             });
 
@@ -54,8 +55,9 @@ class NotificationController extends Controller
                     'curso' => $i->taller?->nombre ?? 'Sin taller',
                     'color' => null,
                     'monto' => (float) ($i->monto_pagado ?? 0),
+                    'metodo_pago' => $i->metodo_pago,
                     'fecha_creacion' => $i->fecha_inscripcion,
-                    'hora' => Carbon::parse($i->fecha_inscripcion)->format('H:i'),
+                    'hora' => Carbon::parse($i->fecha_inscripcion)->timezone('America/Guayaquil')->format('H:i'),
                 ];
             });
 
@@ -80,6 +82,7 @@ class NotificationController extends Controller
                         'curso' => $item['curso'],
                         'color' => $item['color'],
                         'monto' => $item['monto'],
+                        'metodo_pago' => $item['metodo_pago'],
                         'hora' => $item['hora'],
                     ];
                 })->values(),
