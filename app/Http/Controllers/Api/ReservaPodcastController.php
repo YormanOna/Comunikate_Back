@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CuentaPorCobrar;
 use App\Models\Services\AsignacionPersonal;
 use App\Models\Services\ReservaPodcast;
 use Illuminate\Http\Request;
@@ -104,6 +105,14 @@ class ReservaPodcastController extends Controller
 
         $reserva = ReservaPodcast::create($data);
 
+        CuentaPorCobrar::create([
+            'reserva_podcast_id' => $reserva->id,
+            'monto_total' => $data['precio_total'],
+            'monto_abonado' => 0,
+            'estado' => 'pendiente',
+            'es_legacy' => false,
+        ]);
+
         if (!empty($validated['asignaciones'])) {
             foreach ($validated['asignaciones'] as $asignacion) {
                 $reserva->asignacionesPersonal()->create([
@@ -203,6 +212,7 @@ class ReservaPodcastController extends Controller
     {
         $reserva = ReservaPodcast::findOrFail($id);
         $reserva->asignacionesPersonal()->delete();
+        CuentaPorCobrar::where('reserva_podcast_id', $id)->delete();
         $reserva->delete();
 
         Cache::forget('finance.resumen');

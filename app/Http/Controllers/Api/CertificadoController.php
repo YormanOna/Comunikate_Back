@@ -104,6 +104,8 @@ class CertificadoController extends Controller
         $data['cedula_impresa'] = $persona?->cedula ?? $data['cedula_impresa'] ?? '';
         $data['fecha_emision'] = $data['fecha_emision'] ?? now()->toDateString();
         $data['estado'] = Certificado::ESTADO_GENERADO;
+        $data['emitido_por'] = auth()->id() ?? auth()->user()?->persona_id ?? null;
+        $data['fecha_emitido'] = now();
 
         if ($request->hasFile('pdf')) {
             $file = $request->file('pdf');
@@ -255,13 +257,14 @@ class CertificadoController extends Controller
         ]);
     }
 
-    public function marcarEntregado(string $id): JsonResponse
+    public function marcarEntregado(Request $request, string $id): JsonResponse
     {
         $certificado = Certificado::findOrFail($id);
         $certificado->update([
             'entregado_fisicamente' => true,
-            'fecha_entrega' => $certificado->fecha_entrega ?? now()->toDateString(),
+            'fecha_entrega' => $request->get('fecha_entrega', $certificado->fecha_entrega ?? now()->toDateString()),
             'estado' => Certificado::ESTADO_ENTREGADO,
+            'metodo_entrega' => $request->get('metodo_entrega'),
         ]);
 
         return response()->json([
@@ -273,6 +276,10 @@ class CertificadoController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $certificado = Certificado::findOrFail($id);
+        $certificado->update([
+            'fecha_borrado' => now(),
+            'borrado_por' => auth()->id() ?? auth()->user()?->persona_id ?? null,
+        ]);
         $certificado->delete();
 
         return response()->json(['message' => 'Certificado eliminado correctamente']);
@@ -346,7 +353,9 @@ class CertificadoController extends Controller
                 DB::raw('COALESCE(people.personas.apellidos, people.clientes_externos.apellidos) as apellidos'),
                 DB::raw('COALESCE(people.personas.cedula, people.clientes_externos.cedula) as cedula'),
                 'academic.cursos_abiertos.id as curso_abierto_id',
-                'academic.catalogo_cursos.nombre as curso_nombre',
+                'academic.catalogo_cursos.nombre as catalogo_nombre',
+                'academic.cursos_abiertos.nombre_instancia',
+                'academic.cursos_abiertos.modalidad',
                 'academic.certificados.id as certificado_id',
                 'academic.certificados.codigo_certificado',
                 'academic.certificados.estado as estado_certificado',
@@ -472,7 +481,6 @@ class CertificadoController extends Controller
 
         $certificados = Certificado::with(['estudiante', 'catalogoCurso', 'cursoAbierto'])
             ->porCedula($request->cedula)
-            ->disponibles()
             ->orderBy('fecha_emision', 'desc')
             ->get();
 
@@ -499,7 +507,7 @@ class CertificadoController extends Controller
 
     public function descargarPdf(string $id): Response|JsonResponse|StreamedResponse
     {
-        $certificado = Certificado::findOrFail($id);
+        $certificado = Certificado::with(['estudiante', 'catalogoCurso'])->findOrFail($id);
 
         if (!$certificado->tienePdf() || $certificado->estaBorrado()) {
             return response()->json([
@@ -517,6 +525,60 @@ class CertificadoController extends Controller
 
         $certificado->marcarEntregado();
 
-        return Storage::disk('public')->download($path, "certificado_{$certificado->codigo_certificado}.pdf");
+        $nombres = strtoupper(str_replace(' ', '_', trim(($certificado->estudiante->nombres ?? '') . '_' . ($certificado->estudiante->apellidos ?? ''))));
+        $catalogo = strtoupper(str_replace(' ', '_', $certificado->catalogoCurso->nombre ?? 'CERTIFICADO'));
+        $filename = preg_replace('/[^A-Z0-9_]/', '', "{$nombres}_{$catalogo}") . '.pdf';
+
+        return Storage::disk('public')->download($path, $filename);
+    }
+
+    public function historial(string $id): JsonResponse
+    {
+        $certificado = Certificado::with(['estudiante'])->findOrFail($id);
+
+        $eventos = [];
+
+        if ($certificado->fecha_emitido || $certificado->created_at) {
+            $emitidoPor = null;
+            if ($certificado->emitido_por) {
+                $p = \App\Models\Persona::find($certificado->emitido_por);
+                $emitidoPor = $p ? trim(($p->nombres ?? '') . ' ' . ($p->apellidos ?? '')) : null;
+            }
+            $fechaEmitido = $certificado->fecha_emitido ?? $certificado->created_at;
+            $eventos[] = [
+                'accion' => 'Emitido',
+                'fecha' => $fechaEmitido instanceof \Carbon\Carbon ? $fechaEmitido->format('Y-m-d H:i') : $fechaEmitido,
+                'usuario' => $emitidoPor ?? 'Sistema',
+                'detalle' => 'Certificado generado',
+            ];
+        }
+
+        if ($certificado->fecha_entrega) {
+            $eventos[] = [
+                'accion' => 'Entregado',
+                'fecha' => $certificado->fecha_entrega instanceof \Carbon\Carbon
+                    ? $certificado->fecha_entrega->format('Y-m-d')
+                    : $certificado->fecha_entrega,
+                'usuario' => null,
+                'detalle' => ($certificado->metodo_entrega ? ucfirst($certificado->metodo_entrega) : 'Entregado'),
+            ];
+        }
+
+        if ($certificado->fecha_borrado) {
+            $borradoPor = null;
+            if ($certificado->borrado_por) {
+                $p = \App\Models\Persona::find($certificado->borrado_por);
+                $borradoPor = $p ? trim(($p->nombres ?? '') . ' ' . ($p->apellidos ?? '')) : null;
+            }
+            $fechaBorrado = $certificado->fecha_borrado;
+            $eventos[] = [
+                'accion' => 'Borrado',
+                'fecha' => $fechaBorrado instanceof \Carbon\Carbon ? $fechaBorrado->format('Y-m-d H:i') : $fechaBorrado,
+                'usuario' => $borradoPor ?? 'Sistema',
+                'detalle' => 'Registro conservado como histórico',
+            ];
+        }
+
+        return response()->json(['data' => $eventos]);
     }
 }

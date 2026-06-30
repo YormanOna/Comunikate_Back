@@ -28,6 +28,11 @@ class Certificado extends Model
         'fecha_entrega',
         'entregado_fisicamente',
         'verificaciones_count',
+        'fecha_emitido',
+        'fecha_borrado',
+        'emitido_por',
+        'borrado_por',
+        'metodo_entrega',
     ];
 
     protected $casts = [
@@ -37,6 +42,8 @@ class Certificado extends Model
         'verificaciones_count' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'fecha_emitido' => 'datetime',
+        'fecha_borrado' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
