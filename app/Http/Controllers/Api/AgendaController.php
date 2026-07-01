@@ -76,44 +76,4 @@ class AgendaController extends Controller
             'data' => $event,
         ]);
     }
-
-    /**
-     * GET /api/academic/agenda/exportar/pdf
-     *
-     * Exportar agenda a PDF con diseño de grid horario semanal.
-     */
-    public function exportarPDF(Request $request)
-    {
-        $request->validate([
-            'fecha_inicio' => 'nullable|date|date_format:Y-m-d',
-            'fecha_fin' => 'nullable|date|date_format:Y-m-d',
-            'tipos' => 'nullable|array',
-            'tipos.*' => 'string|in:CLASE_CURSO,TALLER,ALQUILER_AULA,PODCAST,STREAMING,ASESORIA',
-        ]);
-
-        $fechaInicio = $request->input('fecha_inicio', Carbon::now()->startOfMonth()->toDateString());
-        $fechaFin = $request->input('fecha_fin', Carbon::now()->endOfMonth()->toDateString());
-        $tipos = $request->input('tipos');
-
-        $data = $this->agendaService->getEventsForPdf($fechaInicio, $fechaFin, $tipos);
-
-        $html = view('pdf.agenda', [
-            'weeks' => $data['weeks'],
-            'hours' => $data['hours'],
-            'min_hour' => $data['min_hour'],
-            'max_hour' => $data['max_hour'],
-            'fecha_inicio' => $data['fecha_inicio'],
-            'fecha_fin' => $data['fecha_fin'],
-            'total_eventos' => $data['total_eventos'],
-            'tipos_activos' => $data['tipos_activos'],
-            'leyenda' => $data['leyenda'],
-            'fecha_generacion' => Carbon::now()->format('d/m/Y H:i'),
-        ])->render();
-
-        $pdf = Pdf::loadHTML($html);
-        $pdf->setPaper('a4', 'landscape');
-        $filename = 'agenda_' . Carbon::parse($fechaInicio)->format('Y-m-d') . '_' . Carbon::parse($fechaFin)->format('Y-m-d') . '.pdf';
-
-        return $pdf->download($filename);
-    }
 }
