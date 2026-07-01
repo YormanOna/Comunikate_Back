@@ -755,7 +755,9 @@ class EstudianteController extends Controller
                 'matriculas.cursoAbierto.catalogo',
                 'matriculas.cursoAbierto.modulos',
                 'matriculas.lineasPago.modulo',
+                'matriculas.lineasPago.transacciones',
                 'matriculas.cuentaPorCobrar.transacciones',
+                'matriculas.solicitudInscripcion.cuentasPorCobrar.transacciones',
                 'ciudad',
             ])
             ->find($id);
@@ -786,7 +788,7 @@ class EstudianteController extends Controller
                             'id' => $lp->id,
                             'modulo' => [
                                 'id' => $lp->modulo->id ?? null,
-                                'nombre' => $lp->modulo->nombre ?? 'Módulo',
+                                'nombre' => $lp->modulo->nombre_modulo ?? $lp->modulo->nombre ?? 'Módulo',
                                 'numero_orden' => $lp->modulo->numero_orden ?? $lp->orden,
                             ],
                             'monto_original' => (float) $lp->monto_original,
@@ -799,13 +801,15 @@ class EstudianteController extends Controller
                     }),
                 ]);
 
+                $concepto = ($matricula->cursoAbierto->catalogo->nombre ?? 'Curso') . ' - ' . ($matricula->cursoAbierto->nombre_instancia ?? '');
                 $cuenta = $matricula->cuentaPorCobrar;
+
                 if ($cuenta) {
                     $cuentas->push([
                         'id' => $cuenta->id,
                         'origen' => 'matricula',
                         'origen_id' => $matricula->id,
-                        'concepto' => ($matricula->cursoAbierto->catalogo->nombre ?? 'Curso') . ' - ' . ($matricula->cursoAbierto->nombre_instancia ?? ''),
+                        'concepto' => $concepto,
                         'monto_total' => (float) $cuenta->monto_total,
                         'monto_abonado' => (float) $cuenta->monto_abonado,
                         'saldo_pendiente' => (float) $cuenta->obtenerSaldoPendiente(),
@@ -824,7 +828,7 @@ class EstudianteController extends Controller
                     $transacciones = $transacciones->concat($cuenta->transacciones->map(fn($t) => [
                         'id' => $t->id,
                         'cuenta_id' => $cuenta->id,
-                        'concepto' => ($matricula->cursoAbierto->catalogo->nombre ?? 'Curso') . ' - ' . ($matricula->cursoAbierto->nombre_instancia ?? ''),
+                        'concepto' => $concepto,
                         'monto' => (float) $t->monto,
                         'metodo_pago' => $t->metodo_pago,
                         'comprobante_url' => $t->comprobante_url,
@@ -832,7 +836,150 @@ class EstudianteController extends Controller
                         'estado_verificacion' => $t->estado_verificacion,
                         'observaciones' => $t->observaciones,
                     ]));
+                } elseif ($matricula->solicitudInscripcion && $matricula->solicitudInscripcion->cuentasPorCobrar->isNotEmpty()) {
+                    foreach ($matricula->solicitudInscripcion->cuentasPorCobrar as $cuentaSolicitud) {
+                        $cuentas->push([
+                            'id' => $cuentaSolicitud->id,
+                            'origen' => 'solicitud_inscripcion',
+                            'origen_id' => $matricula->solicitudInscripcion->id,
+                            'concepto' => $concepto,
+                            'monto_total' => (float) $cuentaSolicitud->monto_total,
+                            'monto_abonado' => (float) $cuentaSolicitud->monto_abonado,
+                            'saldo_pendiente' => (float) $cuentaSolicitud->obtenerSaldoPendiente(),
+                            'estado' => $cuentaSolicitud->estado,
+                            'fecha_creacion' => $cuentaSolicitud->created_at?->format('Y-m-d'),
+                            'transacciones' => $cuentaSolicitud->transacciones->map(fn($t) => [
+                                'id' => $t->id,
+                                'monto' => (float) $t->monto,
+                                'metodo_pago' => $t->metodo_pago,
+                                'comprobante_url' => $t->comprobante_url,
+                                'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                                'estado_verificacion' => $t->estado_verificacion,
+                                'observaciones' => $t->observaciones,
+                            ]),
+                        ]);
+                        $transacciones = $transacciones->concat($cuentaSolicitud->transacciones->map(fn($t) => [
+                            'id' => $t->id,
+                            'cuenta_id' => $cuentaSolicitud->id,
+                            'concepto' => $concepto,
+                            'monto' => (float) $t->monto,
+                            'metodo_pago' => $t->metodo_pago,
+                            'comprobante_url' => $t->comprobante_url,
+                            'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                            'estado_verificacion' => $t->estado_verificacion,
+                            'observaciones' => $t->observaciones,
+                        ]));
+                    }
+                } else {
+                    foreach ($matricula->lineasPago as $lp) {
+                        $moduloNombre = $lp->modulo->nombre_modulo ?? $lp->modulo->nombre ?? 'Módulo';
+                        $lpConcepto = $concepto . ' - ' . $moduloNombre;
+                        $lpSaldo = (float) $lp->saldo_pendiente;
+                        $lpAbonado = (float) $lp->monto_abonado;
+                        $cuentas->push([
+                            'id' => $lp->id,
+                            'origen' => 'matricula',
+                            'origen_id' => $matricula->id,
+                            'concepto' => $lpConcepto,
+                            'monto_total' => (float) $lp->monto_ajustado,
+                            'monto_abonado' => $lpAbonado,
+                            'saldo_pendiente' => max(0, $lpSaldo),
+                            'estado' => $lp->estado,
+                            'fecha_creacion' => $matricula->fecha_inscripcion
+                                ? $matricula->fecha_inscripcion->format('Y-m-d')
+                                : ($matricula->created_at?->format('Y-m-d') ?? null),
+                            'transacciones' => $lp->transacciones->map(fn($t) => [
+                                'id' => $t->id,
+                                'monto' => (float) $t->monto,
+                                'metodo_pago' => $t->metodo_pago,
+                                'comprobante_url' => $t->comprobante_url,
+                                'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                                'estado_verificacion' => $t->estado_verificacion,
+                                'observaciones' => $t->observaciones,
+                            ])->values(),
+                        ]);
+                        $transacciones = $transacciones->concat($lp->transacciones->map(fn($t) => [
+                            'id' => $t->id,
+                            'cuenta_id' => $lp->id,
+                            'concepto' => $lpConcepto,
+                            'monto' => (float) $t->monto,
+                            'metodo_pago' => $t->metodo_pago,
+                            'comprobante_url' => $t->comprobante_url,
+                            'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                            'estado_verificacion' => $t->estado_verificacion,
+                            'observaciones' => $t->observaciones,
+                        ]));
+                    }
                 }
+            }
+
+            // Cuentas por cobrar de servicios (Podcast, Aula, Equipo, Radio)
+            $clienteExternoMatch = null;
+            if ($estudiante->cedula) {
+                $clienteExternoMatch = \App\Models\ClienteExterno::where('cedula', $estudiante->cedula)->first();
+            }
+
+            $cuentasServicios = \App\Models\CuentaPorCobrar::query()
+                ->with(['transacciones'])
+                ->where(function ($q) use ($estudiante, $clienteExternoMatch) {
+                    $q->whereHas('reservaPodcast', fn($sq) => $sq->where('persona_id', $estudiante->id));
+                    $q->orWhereHas('reservaAula', fn($sq) => $sq->where('persona_id', $estudiante->id));
+                    $q->orWhereHas('alquilerEquipo', fn($sq) => $sq->where('persona_id', $estudiante->id));
+                    $q->orWhereHas('reservaRadio', fn($sq) => $sq->where('persona_id', $estudiante->id));
+                    if ($clienteExternoMatch) {
+                        $q->orWhereHas('reservaPodcast', fn($sq) => $sq->where('cliente_externo_id', $clienteExternoMatch->id));
+                        $q->orWhereHas('reservaAula', fn($sq) => $sq->where('cliente_externo_id', $clienteExternoMatch->id));
+                        $q->orWhereHas('alquilerEquipo', fn($sq) => $sq->where('cliente_externo_id', $clienteExternoMatch->id));
+                        $q->orWhereHas('reservaRadio', fn($sq) => $sq->where('cliente_externo_id', $clienteExternoMatch->id));
+                    }
+                })
+                ->get();
+
+            $servicioLabels = [
+                'reserva_podcast_id' => 'Podcast',
+                'reserva_aula_id' => 'Aula',
+                'alquiler_equipo_id' => 'Equipo',
+                'reserva_radio_id' => 'Radio',
+                'edicion_video_id' => 'Edición de Video',
+            ];
+
+            foreach ($cuentasServicios as $cs) {
+                $tipoServicio = '';
+                foreach ($servicioLabels as $col => $label) {
+                    if ($cs->$col) { $tipoServicio = $label; break; }
+                }
+
+                $cuentas->push([
+                    'id' => $cs->id,
+                    'origen' => 'servicio',
+                    'origen_id' => $cs->id,
+                    'concepto' => $tipoServicio ?: 'Servicio',
+                    'monto_total' => (float) $cs->monto_total,
+                    'monto_abonado' => (float) $cs->monto_abonado,
+                    'saldo_pendiente' => (float) $cs->obtenerSaldoPendiente(),
+                    'estado' => $cs->estado,
+                    'fecha_creacion' => $cs->created_at?->format('Y-m-d'),
+                    'transacciones' => $cs->transacciones->map(fn($t) => [
+                        'id' => $t->id,
+                        'monto' => (float) $t->monto,
+                        'metodo_pago' => $t->metodo_pago,
+                        'comprobante_url' => $t->comprobante_url,
+                        'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                        'estado_verificacion' => $t->estado_verificacion,
+                        'observaciones' => $t->observaciones,
+                    ])->values(),
+                ]);
+                $transacciones = $transacciones->concat($cs->transacciones->map(fn($t) => [
+                    'id' => $t->id,
+                    'cuenta_id' => $cs->id,
+                    'concepto' => $tipoServicio ?: 'Servicio',
+                    'monto' => (float) $t->monto,
+                    'metodo_pago' => $t->metodo_pago,
+                    'comprobante_url' => $t->comprobante_url,
+                    'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                    'estado_verificacion' => $t->estado_verificacion,
+                    'observaciones' => $t->observaciones,
+                ]));
             }
         } else {
             $cliente = ClienteExterno::query()
@@ -918,6 +1065,58 @@ class EstudianteController extends Controller
                         ]),
                     ]);
                 }
+            }
+
+            // Cuentas por cobrar de servicios para cliente externo
+            $cuentasServiciosCliente = \App\Models\CuentaPorCobrar::query()
+                ->with(['transacciones'])
+                ->where(function ($q) use ($cliente) {
+                    $q->whereHas('reservaPodcast', fn($sq) => $sq->where('cliente_externo_id', $cliente->id));
+                    $q->orWhereHas('reservaAula', fn($sq) => $sq->where('cliente_externo_id', $cliente->id));
+                    $q->orWhereHas('alquilerEquipo', fn($sq) => $sq->where('cliente_externo_id', $cliente->id));
+                    $q->orWhereHas('reservaRadio', fn($sq) => $sq->where('cliente_externo_id', $cliente->id));
+                })
+                ->get();
+
+            foreach ($cuentasServiciosCliente as $cs) {
+                $tipoServicio = '';
+                if ($cs->reserva_podcast_id) $tipoServicio = 'Podcast';
+                elseif ($cs->reserva_aula_id) $tipoServicio = 'Aula';
+                elseif ($cs->alquiler_equipo_id) $tipoServicio = 'Equipo';
+                elseif ($cs->reserva_radio_id) $tipoServicio = 'Radio';
+                elseif ($cs->edicion_video_id) $tipoServicio = 'Edición de Video';
+
+                $cuentas->push([
+                    'id' => $cs->id,
+                    'origen' => 'servicio',
+                    'origen_id' => $cs->id,
+                    'concepto' => $tipoServicio ?: 'Servicio',
+                    'monto_total' => (float) $cs->monto_total,
+                    'monto_abonado' => (float) $cs->monto_abonado,
+                    'saldo_pendiente' => (float) $cs->obtenerSaldoPendiente(),
+                    'estado' => $cs->estado,
+                    'fecha_creacion' => $cs->created_at?->format('Y-m-d'),
+                    'transacciones' => $cs->transacciones->map(fn($t) => [
+                        'id' => $t->id,
+                        'monto' => (float) $t->monto,
+                        'metodo_pago' => $t->metodo_pago,
+                        'comprobante_url' => $t->comprobante_url,
+                        'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                        'estado_verificacion' => $t->estado_verificacion,
+                        'observaciones' => $t->observaciones,
+                    ])->values(),
+                ]);
+                $transacciones = $transacciones->concat($cs->transacciones->map(fn($t) => [
+                    'id' => $t->id,
+                    'cuenta_id' => $cs->id,
+                    'concepto' => $tipoServicio ?: 'Servicio',
+                    'monto' => (float) $t->monto,
+                    'metodo_pago' => $t->metodo_pago,
+                    'comprobante_url' => $t->comprobante_url,
+                    'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                    'estado_verificacion' => $t->estado_verificacion,
+                    'observaciones' => $t->observaciones,
+                ]));
             }
         }
 

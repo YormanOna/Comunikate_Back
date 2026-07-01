@@ -103,6 +103,7 @@ class AgendaService
             ->leftJoin('people.personas as p', 'c.instructor_id', '=', 'p.id')
             ->leftJoin('people.personas as doc', 'ca.docente_id', '=', 'doc.id')
             ->leftJoin('core.ciudades as ciu', 'ca.ciudad_id', '=', 'ciu.id')
+            ->whereNull('ca.deleted_at')
             ->whereBetween('c.fecha_clase', [$fechaInicio, $fechaFin])
             ->select(
                 'c.id as referencia_id',
@@ -137,6 +138,7 @@ class AgendaService
             ->leftJoin('people.personas as p', 'c.instructor_id', '=', 'p.id')
             ->leftJoin('people.personas as doc', 'ca.docente_id', '=', 'doc.id')
             ->leftJoin('core.ciudades as ciu', 'ca.ciudad_id', '=', 'ciu.id')
+            ->whereNull('ca.deleted_at')
             ->where('c.id', $id)
             ->select(
                 'c.id as referencia_id',
