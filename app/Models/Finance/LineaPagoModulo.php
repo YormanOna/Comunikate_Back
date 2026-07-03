@@ -5,6 +5,7 @@ namespace App\Models\Finance;
 use App\Models\Matricula;
 use App\Models\Modulo;
 use App\Models\Persona;
+use App\Models\CuentaPorCobrar;
 use App\Models\TransaccionIngreso;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -141,6 +142,29 @@ class LineaPagoModulo extends Model
         $this->monto_abonado += $transaccion->monto;
         $this->recalcularEstado();
         $this->save();
+
+        $this->syncCuentaPorCobrar();
+    }
+
+    /**
+     * Sincroniza el estado de la CuentaPorCobrar padre
+     * basado en los montos actuales de todas las líneas de pago de la matrícula.
+     */
+    private function syncCuentaPorCobrar(): void
+    {
+        $matricula = $this->matricula()->first();
+        if (! $matricula) return;
+
+        $cuenta = $matricula->cuentaPorCobrar()->first();
+        if (! $cuenta) return;
+
+        $totalAbonado = $matricula->lineasPago()->sum('monto_abonado');
+        $cuenta->update([
+            'monto_abonado' => $totalAbonado,
+            'estado' => $totalAbonado >= $cuenta->monto_total
+                ? CuentaPorCobrar::ESTADO_PAGADO
+                : ($totalAbonado > 0 ? CuentaPorCobrar::ESTADO_ABONADO : CuentaPorCobrar::ESTADO_PENDIENTE),
+        ]);
     }
 
     /**

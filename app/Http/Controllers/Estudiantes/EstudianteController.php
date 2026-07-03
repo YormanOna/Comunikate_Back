@@ -30,22 +30,30 @@ class EstudianteController extends Controller
     {
         $internos = Persona::query()
             ->estudiantes()
-            ->with(['ciudad', 'perfilEstudiante', 'matriculas.cuentaPorCobrar'])
+            ->with(['ciudad', 'perfilEstudiante', 'matriculas.cuentaPorCobrar', 'matriculas.lineasPago'])
             ->whereNull('deleted_at')
             ->orderBy('nombres')
             ->get()
             ->map(function ($p) {
                 $totalMatriculas = $p->matriculas->count();
                 $cuentas = $p->matriculas->map(fn($m) => $m->cuentaPorCobrar)->filter();
-                $estados = $cuentas->pluck('estado')->unique();
+                $estadosCuentas = $cuentas->pluck('estado')->unique();
+                $estadosLineas = $p->matriculas->flatMap(fn($m) => $m->lineasPago->pluck('estado'))->unique();
 
                 $estadoPago = 'ninguno';
                 if ($totalMatriculas > 0) {
-                    if ($cuentas->count() < $totalMatriculas || $estados->contains('pendiente')) {
+                    $tienePendiente = $estadosCuentas->contains('pendiente') || $estadosLineas->contains('pendiente');
+                    $tieneAbonado = $estadosCuentas->contains('abonado') || $estadosLineas->contains('abonado');
+                    $tienePagado = ($cuentas->count() > 0 && $estadosCuentas->every(fn($e) => $e === 'pagado'))
+                        || ($cuentas->isEmpty() && $estadosLineas->isNotEmpty() && $estadosLineas->every(fn($e) => $e === 'pagado'));
+
+                    if ($cuentas->count() < $totalMatriculas && $estadosLineas->isEmpty()) {
                         $estadoPago = 'deudor';
-                    } elseif ($estados->contains('abonado')) {
+                    } elseif ($tienePendiente) {
+                        $estadoPago = 'deudor';
+                    } elseif ($tieneAbonado) {
                         $estadoPago = 'abonado';
-                    } elseif ($estados->count() > 0 && $estados->every(fn($e) => $e === 'pagado')) {
+                    } elseif ($tienePagado) {
                         $estadoPago = 'al_dia';
                     } else {
                         $estadoPago = 'deudor';
@@ -768,7 +776,8 @@ class EstudianteController extends Controller
         $matriculasConLineas = collect();
 
         if ($estudiante) {
-            $datosEstudiante = [
+            try {
+                $datosEstudiante = [
                 'id' => $estudiante->id,
                 'nombre_completo' => $estudiante->nombres . ' ' . $estudiante->apellidos,
                 'cedula' => $estudiante->cedula,
@@ -787,9 +796,9 @@ class EstudianteController extends Controller
                         return [
                             'id' => $lp->id,
                             'modulo' => [
-                                'id' => $lp->modulo->id ?? null,
-                                'nombre' => $lp->modulo->nombre_modulo ?? $lp->modulo->nombre ?? 'Módulo',
-                                'numero_orden' => $lp->modulo->numero_orden ?? $lp->orden,
+                                'id' => $lp->modulo?->id ?? null,
+                                'nombre' => $lp->modulo?->nombre_modulo ?? $lp->modulo?->nombre ?? 'Módulo',
+                                'numero_orden' => $lp->modulo?->numero_orden ?? $lp->orden,
                             ],
                             'monto_original' => (float) $lp->monto_original,
                             'monto_ajustado' => (float) $lp->monto_ajustado,
@@ -872,7 +881,7 @@ class EstudianteController extends Controller
                     }
                 } else {
                     foreach ($matricula->lineasPago as $lp) {
-                        $moduloNombre = $lp->modulo->nombre_modulo ?? $lp->modulo->nombre ?? 'Módulo';
+                        $moduloNombre = $lp->modulo?->nombre_modulo ?? $lp->modulo?->nombre ?? 'Módulo';
                         $lpConcepto = $concepto . ' - ' . $moduloNombre;
                         $lpSaldo = (float) $lp->saldo_pendiente;
                         $lpAbonado = (float) $lp->monto_abonado;
@@ -981,12 +990,149 @@ class EstudianteController extends Controller
                     'observaciones' => $t->observaciones,
                 ]));
             }
+
+            if ($matriculasConLineas->isEmpty()) {
+                $solicitudes = \App\Models\SolicitudInscripcion::where('persona_id', $estudiante->id)
+                    ->whereIn('estado', ['aprobado', 'matricula_creada'])
+                    ->with([
+                        'matricula.lineasPago.modulo',
+                        'matricula.lineasPago.transacciones',
+                        'matricula.cuentaPorCobrar.transacciones',
+                        'cursoAbierto.catalogo',
+                    ])->get();
+
+                if ($solicitudes->isEmpty() && $estudiante->cedula) {
+                    $clienteExterno = \App\Models\ClienteExterno::where('cedula', $estudiante->cedula)->first();
+                    if ($clienteExterno) {
+                        $solicitudes = \App\Models\SolicitudInscripcion::where('participante_externo_id', $clienteExterno->id)
+                            ->whereIn('estado', ['aprobado', 'matricula_creada'])
+                            ->with([
+                                'matricula.lineasPago.modulo',
+                                'matricula.lineasPago.transacciones',
+                                'matricula.cuentaPorCobrar.transacciones',
+                                'cursoAbierto.catalogo',
+                            ])->get();
+                    }
+                }
+
+                foreach ($solicitudes as $sol) {
+                    $matricula = $sol->matricula;
+                    if (!$matricula) continue;
+
+                    $matriculasConLineas->push([
+                        'id' => $matricula->id,
+                        'curso' => [
+                            'nombre' => ($sol->cursoAbierto->catalogo->nombre ?? 'Curso'),
+                            'instancia' => $sol->cursoAbierto->nombre_instancia ?? '',
+                        ],
+                        'lineas_pago' => $matricula->lineasPago->map(function ($lp) {
+                            return [
+                                'id' => $lp->id,
+                                'modulo' => [
+                                    'id' => $lp->modulo?->id ?? null,
+                                    'nombre' => $lp->modulo?->nombre_modulo ?? $lp->modulo?->nombre ?? 'Módulo',
+                                    'numero_orden' => $lp->modulo?->numero_orden ?? $lp->orden,
+                                ],
+                                'monto_original' => (float) $lp->monto_original,
+                                'monto_ajustado' => (float) $lp->monto_ajustado,
+                                'monto_abonado' => (float) $lp->monto_abonado,
+                                'saldo_pendiente' => (float) $lp->saldo_pendiente,
+                                'estado' => $lp->estado,
+                                'orden' => $lp->orden,
+                            ];
+                        }),
+                    ]);
+
+                    $concepto = ($sol->cursoAbierto->catalogo->nombre ?? 'Curso') . ' - ' . ($sol->cursoAbierto->nombre_instancia ?? '');
+                    $cuenta = $matricula->cuentaPorCobrar;
+
+                    if ($cuenta) {
+                        $cuentas->push([
+                            'id' => $cuenta->id,
+                            'origen' => 'matricula',
+                            'origen_id' => $matricula->id,
+                            'concepto' => $concepto,
+                            'monto_total' => (float) $cuenta->monto_total,
+                            'monto_abonado' => (float) $cuenta->monto_abonado,
+                            'saldo_pendiente' => (float) $cuenta->obtenerSaldoPendiente(),
+                            'estado' => $cuenta->estado,
+                            'fecha_creacion' => $cuenta->created_at?->format('Y-m-d'),
+                            'transacciones' => $cuenta->transacciones->map(fn($t) => [
+                                'id' => $t->id,
+                                'monto' => (float) $t->monto,
+                                'metodo_pago' => $t->metodo_pago,
+                                'comprobante_url' => $t->comprobante_url,
+                                'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                                'estado_verificacion' => $t->estado_verificacion,
+                                'observaciones' => $t->observaciones,
+                            ]),
+                        ]);
+                        $transacciones = $transacciones->concat($cuenta->transacciones->map(fn($t) => [
+                            'id' => $t->id,
+                            'cuenta_id' => $cuenta->id,
+                            'concepto' => $concepto,
+                            'monto' => (float) $t->monto,
+                            'metodo_pago' => $t->metodo_pago,
+                            'comprobante_url' => $t->comprobante_url,
+                            'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                            'estado_verificacion' => $t->estado_verificacion,
+                            'observaciones' => $t->observaciones,
+                        ]));
+                    } else {
+                        foreach ($matricula->lineasPago as $lp) {
+                            $moduloNombre = $lp->modulo?->nombre_modulo ?? $lp->modulo?->nombre ?? 'Módulo';
+                            $lpConcepto = $concepto . ' - ' . $moduloNombre;
+                            $lpSaldo = (float) $lp->saldo_pendiente;
+                            $lpAbonado = (float) $lp->monto_abonado;
+                            $cuentas->push([
+                                'id' => $lp->id,
+                                'origen' => 'matricula',
+                                'origen_id' => $matricula->id,
+                                'concepto' => $lpConcepto,
+                                'monto_total' => (float) $lp->monto_ajustado,
+                                'monto_abonado' => $lpAbonado,
+                                'saldo_pendiente' => max(0, $lpSaldo),
+                                'estado' => $lp->estado,
+                                'fecha_creacion' => $matricula->fecha_inscripcion
+                                    ? $matricula->fecha_inscripcion->format('Y-m-d')
+                                    : ($matricula->created_at?->format('Y-m-d') ?? null),
+                                'transacciones' => $lp->transacciones->map(fn($t) => [
+                                    'id' => $t->id,
+                                    'monto' => (float) $t->monto,
+                                    'metodo_pago' => $t->metodo_pago,
+                                    'comprobante_url' => $t->comprobante_url,
+                                    'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                                    'estado_verificacion' => $t->estado_verificacion,
+                                    'observaciones' => $t->observaciones,
+                                ])->values(),
+                            ]);
+                            $transacciones = $transacciones->concat($lp->transacciones->map(fn($t) => [
+                                'id' => $t->id,
+                                'cuenta_id' => $lp->id,
+                                'concepto' => $lpConcepto,
+                                'monto' => (float) $t->monto,
+                                'metodo_pago' => $t->metodo_pago,
+                                'comprobante_url' => $t->comprobante_url,
+                                'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                                'estado_verificacion' => $t->estado_verificacion,
+                                'observaciones' => $t->observaciones,
+                            ]));
+                        }
+                    }
+                }
+            }
+            } catch (\Exception $e) {
+                \Log::error('Error en financialProfile interno: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            }
         } else {
             $cliente = ClienteExterno::query()
                 ->with([
                     'solicitudesInscripcion' => fn($q) => $q->whereIn('estado', ['aprobado', 'matricula_creada']),
                     'solicitudesInscripcion.cursoAbierto.catalogo',
                     'solicitudesInscripcion.cuentasPorCobrar.transacciones',
+                    'solicitudesInscripcion.matricula.lineasPago.modulo',
+                    'solicitudesInscripcion.matricula.lineasPago.transacciones',
+                    'solicitudesInscripcion.matricula.cuentaPorCobrar.transacciones',
                     'ciudad',
                 ])
                  ->find($id);
@@ -1043,12 +1189,45 @@ class EstudianteController extends Controller
             ];
 
             foreach ($cliente->solicitudesInscripcion as $solicitud) {
-                foreach ($solicitud->cuentasPorCobrar as $cuenta) {
+                $concepto = ($solicitud->cursoAbierto->catalogo->nombre ?? 'Curso') . ' - ' . ($solicitud->cursoAbierto->nombre_instancia ?? '');
+                $matricula = $solicitud->matricula;
+
+                if ($matricula) {
+                    $matriculasConLineas->push([
+                        'id' => $matricula->id,
+                        'curso' => [
+                            'nombre' => ($solicitud->cursoAbierto->catalogo->nombre ?? 'Curso'),
+                            'instancia' => $solicitud->cursoAbierto->nombre_instancia ?? '',
+                        ],
+                        'lineas_pago' => $matricula->lineasPago->map(function ($lp) {
+                            return [
+                                'id' => $lp->id,
+                                'modulo' => [
+                                    'id' => $lp->modulo?->id ?? null,
+                                    'nombre' => $lp->modulo?->nombre_modulo ?? $lp->modulo?->nombre ?? 'Módulo',
+                                    'numero_orden' => $lp->modulo?->numero_orden ?? $lp->orden,
+                                ],
+                                'monto_original' => (float) $lp->monto_original,
+                                'monto_ajustado' => (float) $lp->monto_ajustado,
+                                'monto_abonado' => (float) $lp->monto_abonado,
+                                'saldo_pendiente' => (float) $lp->saldo_pendiente,
+                                'estado' => $lp->estado,
+                                'orden' => $lp->orden,
+                            ];
+                        }),
+                    ]);
+                }
+
+                $tieneCuentaCobrar = $solicitud->cuentasPorCobrar->isNotEmpty();
+                $tieneCuentaMatricula = $matricula && $matricula->cuentaPorCobrar;
+
+                if ($tieneCuentaMatricula) {
+                    $cuenta = $matricula->cuentaPorCobrar;
                     $cuentas->push([
                         'id' => $cuenta->id,
-                        'origen' => 'solicitud_inscripcion',
-                        'origen_id' => $solicitud->id,
-                        'concepto' => ($solicitud->cursoAbierto->catalogo->nombre ?? 'Curso') . ' - ' . ($solicitud->cursoAbierto->nombre_instancia ?? ''),
+                        'origen' => 'matricula',
+                        'origen_id' => $matricula->id,
+                        'concepto' => $concepto,
                         'monto_total' => (float) $cuenta->monto_total,
                         'monto_abonado' => (float) $cuenta->monto_abonado,
                         'saldo_pendiente' => (float) $cuenta->obtenerSaldoPendiente(),
@@ -1064,6 +1243,91 @@ class EstudianteController extends Controller
                             'observaciones' => $t->observaciones,
                         ]),
                     ]);
+                    $transacciones = $transacciones->concat($cuenta->transacciones->map(fn($t) => [
+                        'id' => $t->id,
+                        'cuenta_id' => $cuenta->id,
+                        'concepto' => $concepto,
+                        'monto' => (float) $t->monto,
+                        'metodo_pago' => $t->metodo_pago,
+                        'comprobante_url' => $t->comprobante_url,
+                        'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                        'estado_verificacion' => $t->estado_verificacion,
+                        'observaciones' => $t->observaciones,
+                    ]));
+                } elseif ($tieneCuentaCobrar) {
+                    foreach ($solicitud->cuentasPorCobrar as $cuenta) {
+                        $cuentas->push([
+                            'id' => $cuenta->id,
+                            'origen' => 'solicitud_inscripcion',
+                            'origen_id' => $solicitud->id,
+                            'concepto' => $concepto,
+                            'monto_total' => (float) $cuenta->monto_total,
+                            'monto_abonado' => (float) $cuenta->monto_abonado,
+                            'saldo_pendiente' => (float) $cuenta->obtenerSaldoPendiente(),
+                            'estado' => $cuenta->estado,
+                            'fecha_creacion' => $cuenta->created_at?->format('Y-m-d'),
+                            'transacciones' => $cuenta->transacciones->map(fn($t) => [
+                                'id' => $t->id,
+                                'monto' => (float) $t->monto,
+                                'metodo_pago' => $t->metodo_pago,
+                                'comprobante_url' => $t->comprobante_url,
+                                'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                                'estado_verificacion' => $t->estado_verificacion,
+                                'observaciones' => $t->observaciones,
+                            ]),
+                        ]);
+                        $transacciones = $transacciones->concat($cuenta->transacciones->map(fn($t) => [
+                            'id' => $t->id,
+                            'cuenta_id' => $cuenta->id,
+                            'concepto' => $concepto,
+                            'monto' => (float) $t->monto,
+                            'metodo_pago' => $t->metodo_pago,
+                            'comprobante_url' => $t->comprobante_url,
+                            'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                            'estado_verificacion' => $t->estado_verificacion,
+                            'observaciones' => $t->observaciones,
+                        ]));
+                    }
+                } elseif ($matricula && $matricula->lineasPago->isNotEmpty()) {
+                    foreach ($matricula->lineasPago as $lp) {
+                        $moduloNombre = $lp->modulo?->nombre_modulo ?? $lp->modulo?->nombre ?? 'Módulo';
+                        $lpConcepto = $concepto . ' - ' . $moduloNombre;
+                        $lpSaldo = (float) $lp->saldo_pendiente;
+                        $lpAbonado = (float) $lp->monto_abonado;
+                        $cuentas->push([
+                            'id' => $lp->id,
+                            'origen' => 'matricula',
+                            'origen_id' => $matricula->id,
+                            'concepto' => $lpConcepto,
+                            'monto_total' => (float) $lp->monto_ajustado,
+                            'monto_abonado' => $lpAbonado,
+                            'saldo_pendiente' => max(0, $lpSaldo),
+                            'estado' => $lp->estado,
+                            'fecha_creacion' => $matricula->fecha_inscripcion
+                                ? $matricula->fecha_inscripcion->format('Y-m-d')
+                                : ($matricula->created_at?->format('Y-m-d') ?? null),
+                            'transacciones' => $lp->transacciones->map(fn($t) => [
+                                'id' => $t->id,
+                                'monto' => (float) $t->monto,
+                                'metodo_pago' => $t->metodo_pago,
+                                'comprobante_url' => $t->comprobante_url,
+                                'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                                'estado_verificacion' => $t->estado_verificacion,
+                                'observaciones' => $t->observaciones,
+                            ])->values(),
+                        ]);
+                        $transacciones = $transacciones->concat($lp->transacciones->map(fn($t) => [
+                            'id' => $t->id,
+                            'cuenta_id' => $lp->id,
+                            'concepto' => $lpConcepto,
+                            'monto' => (float) $t->monto,
+                            'metodo_pago' => $t->metodo_pago,
+                            'comprobante_url' => $t->comprobante_url,
+                            'fecha_pago' => $t->fecha_pago?->format('Y-m-d'),
+                            'estado_verificacion' => $t->estado_verificacion,
+                            'observaciones' => $t->observaciones,
+                        ]));
+                    }
                 }
             }
 
@@ -1540,12 +1804,14 @@ class EstudianteController extends Controller
                 'celular' => $p->celular,
                 'total_cursos' => $totalMatriculas,
                 'estado_pago' => $estadoPago === 'ninguno' ? 'Sin cursos' : $estadoPago,
-                'saldo_pendiente' => $p->matriculas->sum(function($m) {
-                    if ($m->cuentaPorCobrar) {
-                        return $m->cuentaPorCobrar->monto_total - $m->cuentaPorCobrar->monto_abonado;
-                    }
-                    return $m->cursoAbierto->precio_base ?? 0;
-                }),
+                    'saldo_pendiente' => $p->matriculas->sum(function($m) {
+                        if ($m->cuentaPorCobrar) {
+                            return $m->cuentaPorCobrar->monto_total - $m->cuentaPorCobrar->monto_abonado;
+                        }
+                        $lineasSum = $m->lineasPago->sum('saldo_pendiente');
+                        if ($lineasSum > 0) return $lineasSum;
+                        return $m->cursoAbierto->precio_base ?? 0;
+                    }),
             ];
         });
 

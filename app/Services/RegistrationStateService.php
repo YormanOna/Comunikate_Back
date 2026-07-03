@@ -112,6 +112,14 @@ class RegistrationStateService
                 CuentaPorCobrar::where('matricula_id', $matricula->id)
                     ->update(['es_legacy' => true]);
 
+                $montoTotal = collect($lineasPago)->sum('monto_ajustado');
+                $cuentaCobrar = CuentaPorCobrar::create([
+                    'matricula_id' => $matricula->id,
+                    'monto_total' => $montoTotal,
+                    'monto_abonado' => 0,
+                    'estado' => $montoTotal > 0 ? CuentaPorCobrar::ESTADO_PENDIENTE : CuentaPorCobrar::ESTADO_PAGADO,
+                ]);
+
                 $solicitud->estado = SolicitudInscripcion::ESTADO_MATRICULA_CREADA;
                 $solicitud->save();
 
@@ -165,11 +173,22 @@ class RegistrationStateService
 
                 Cache::forget('finance.resumen');
 
+                $montosActuales = collect($lineasPago)->map(fn($l) => $l->refresh());
+                $montoTotalFinal = $montosActuales->sum('monto_ajustado');
+                $montoAbonadoFinal = $montosActuales->sum('monto_abonado');
+                $cuentaCobrar->update([
+                    'monto_total' => $montoTotalFinal,
+                    'monto_abonado' => $montoAbonadoFinal,
+                    'estado' => $montoAbonadoFinal >= $montoTotalFinal
+                        ? CuentaPorCobrar::ESTADO_PAGADO
+                        : ($montoAbonadoFinal > 0 ? CuentaPorCobrar::ESTADO_ABONADO : CuentaPorCobrar::ESTADO_PENDIENTE),
+                ]);
+
                 return [
                     'exito' => true,
                     'mensaje' => 'Solicitud aprobada y pago registrado correctamente',
                     'matricula_id' => $matricula->id,
-                    'cuenta_cobrar_id' => null,
+                    'cuenta_cobrar_id' => $cuentaCobrar->id,
                     'lineas_pago_ids' => collect($lineasPago)->pluck('id')->toArray(),
                     'requiere_pago_inicial' => count($lineasPago) > 0,
                 ];
