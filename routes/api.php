@@ -45,6 +45,7 @@ use App\Http\Controllers\Api\TarifaRadioController;
 use App\Http\Controllers\Api\ReservaRadioController;
 use App\Http\Controllers\Api\InstructorPortalController;
 use App\Http\Controllers\Api\FinanceController;
+use App\Http\Controllers\Api\EstadisticasController;
 use App\Http\Controllers\Api\EgresoController;
 use App\Http\Controllers\Api\SecretariaDashboardController;
 use App\Http\Controllers\Api\SecretariaFinanceController;
@@ -619,7 +620,9 @@ Route::prefix('reports')->group(function () {
         Route::get('matriculas/{matriculaId}/lineas-pago', [FinanceController::class, 'getLineasPagoPorMatricula'])->name('finanzas.matriculas.lineas-pago');
         Route::get('talleres/{tallerId}/participante/{participanteId}', [FinanceController::class, 'getHistorialParticipanteTaller'])->name('finanzas.talleres.participante');
         Route::get('ingresos', [FinanceController::class, 'getIngresos'])->name('finanzas.ingresos');
-        Route::get('estadisticas', [FinanceController::class, 'getEstadisticas'])->name('finanzas.estadisticas');
+        Route::get('estadisticas', [EstadisticasController::class, 'getEstadisticas'])->name('finanzas.estadisticas');
+        Route::get('estadisticas/catalogo/{id}', [EstadisticasController::class, 'getCatalogoDetalle'])->name('finanzas.estadisticas.catalogo');
+        Route::get('estadisticas/estudiante/{id}', [EstadisticasController::class, 'getEstudianteDetalle'])->name('finanzas.estadisticas.estudiante');
 
         Route::prefix('egresos')->group(function () {
             Route::get('/', [EgresoController::class, 'index'])->name('finanzas.egresos.index');
