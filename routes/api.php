@@ -665,6 +665,22 @@ Route::prefix('reports')->group(function () {
         Route::get('dashboard', [SecretariaDashboardController::class, 'index'])
             ->name('secretaria.dashboard');
 
+        // Dashboard extendido (secciones operativas)
+        Route::prefix('dashboard')->group(function () {
+            Route::get('agenda-hoy', [SecretariaDashboardController::class, 'agendaHoy'])
+                ->name('secretaria.dashboard.agenda-hoy');
+            Route::get('resumen-estudiantes', [SecretariaDashboardController::class, 'resumenEstudiantes'])
+                ->name('secretaria.dashboard.resumen-estudiantes');
+            Route::get('reservas-proximas', [SecretariaDashboardController::class, 'reservasProximas'])
+                ->name('secretaria.dashboard.reservas-proximas');
+            Route::get('tareas-pendientes', [SecretariaDashboardController::class, 'tareasPendientes'])
+                ->name('secretaria.dashboard.tareas-pendientes');
+            Route::get('solicitudes-pendientes', [SecretariaDashboardController::class, 'solicitudesPendientes'])
+                ->name('secretaria.dashboard.solicitudes-pendientes');
+            Route::get('alertas', [SecretariaDashboardController::class, 'alertas'])
+                ->name('secretaria.dashboard.alertas');
+        });
+
         // Estudiantes
         Route::prefix('estudiantes')->group(function () {
             Route::get('/', [EstudianteController::class, 'index'])->name('secretaria.estudiantes.index');

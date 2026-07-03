@@ -3,17 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CambioHorario extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids;
 
     protected $table = 'academic.cambios_horario';
     protected $connection = 'pgsql';
-    public $timestamps = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'matricula_origen_id',
@@ -22,16 +21,13 @@ class CambioHorario extends Model
         'motivo',
         'estado',
         'observaciones_admin',
+        'fecha_cambio',
     ];
 
     protected $casts = [
         'estado' => 'string',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'fecha_cambio' => 'datetime',
     ];
-
-    protected $hidden = ['created_at', 'updated_at', 'deleted_at'];
 
     const ESTADO_PENDIENTE = 'pendiente';
     const ESTADO_APROBADO = 'aprobado';
