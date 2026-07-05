@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\DB;
 
 class InstructorPortalController extends Controller
 {
+    private function isAdmin(): bool
+    {
+        return auth()->user()->hasRole('Administrador');
+    }
+
     /**
      * Listado de cursos asignados al instructor autenticado
      */
@@ -41,9 +46,14 @@ class InstructorPortalController extends Controller
     {
         $personaId = auth()->user()->persona_id;
 
-        $curso = CursoAbierto::query()
-            ->where('id', $id)
-            ->where('docente_id', $personaId)
+        $query = CursoAbierto::query()
+            ->where('id', $id);
+
+        if (!$this->isAdmin()) {
+            $query->where('docente_id', $personaId);
+        }
+
+        $curso = $query
             ->with(['catalogo', 'horario.diasSemana', 'modulos', 'matriculas.estudiante'])
             ->firstOrFail();
 
@@ -67,10 +77,14 @@ class InstructorPortalController extends Controller
     {
         $personaId = auth()->user()->persona_id;
 
-        // Validar que el curso pertenezca al instructor
-        CursoAbierto::where('id', $id)
-            ->where('docente_id', $personaId)
-            ->firstOrFail();
+        // Validar que el curso exista (sin filtro de docente si es admin)
+        $query = CursoAbierto::where('id', $id);
+
+        if (!$this->isAdmin()) {
+            $query->where('docente_id', $personaId);
+        }
+
+        $query->firstOrFail();
 
         $matriculas = Matricula::where('curso_abierto_id', $id)
             ->with(['estudiante', 'notas', 'solicitudInscripcion.participanteExterno'])
@@ -169,9 +183,13 @@ class InstructorPortalController extends Controller
     {
         $personaId = auth()->user()->persona_id;
 
-        Modulo::where('id', $moduloId)
-            ->whereHas('cursoAbierto', fn($q) => $q->where('docente_id', $personaId))
-            ->firstOrFail();
+        $query = Modulo::where('id', $moduloId);
+
+        if (!$this->isAdmin()) {
+            $query->whereHas('cursoAbierto', fn($q) => $q->where('docente_id', $personaId));
+        }
+
+        $query->firstOrFail();
 
         $clases = Clase::where('modulo_id', $moduloId)
             ->orderBy('fecha_clase', 'asc')
@@ -195,9 +213,13 @@ class InstructorPortalController extends Controller
     {
         $personaId = auth()->user()->persona_id;
 
-        $clase = Clase::where('id', $claseId)
-            ->whereHas('modulo.cursoAbierto', fn($q) => $q->where('docente_id', $personaId))
-            ->firstOrFail();
+        $query = Clase::where('id', $claseId);
+
+        if (!$this->isAdmin()) {
+            $query->whereHas('modulo.cursoAbierto', fn($q) => $q->where('docente_id', $personaId));
+        }
+
+        $clase = $query->firstOrFail();
 
         return response()->json([
             'datos' => $clase
@@ -219,9 +241,13 @@ class InstructorPortalController extends Controller
             'asistencias.*.estado' => 'nullable|string|in:presente,ausente,tardanza,justificado',
         ]);
 
-        Clase::where('id', $claseId)
-            ->whereHas('modulo.cursoAbierto', fn($q) => $q->where('docente_id', $personaId))
-            ->firstOrFail();
+        $claseQuery = Clase::where('id', $claseId);
+
+        if (!$this->isAdmin()) {
+            $claseQuery->whereHas('modulo.cursoAbierto', fn($q) => $q->where('docente_id', $personaId));
+        }
+
+        $claseQuery->firstOrFail();
 
         DB::beginTransaction();
         try {
@@ -261,9 +287,13 @@ class InstructorPortalController extends Controller
             'notas.*.observaciones' => 'nullable|string',
         ]);
 
-        Modulo::where('id', $request->modulo_id)
-            ->whereHas('cursoAbierto', fn($q) => $q->where('docente_id', $personaId))
-            ->firstOrFail();
+        $moduloQuery = Modulo::where('id', $request->modulo_id);
+
+        if (!$this->isAdmin()) {
+            $moduloQuery->whereHas('cursoAbierto', fn($q) => $q->where('docente_id', $personaId));
+        }
+
+        $moduloQuery->firstOrFail();
 
         DB::beginTransaction();
         try {
