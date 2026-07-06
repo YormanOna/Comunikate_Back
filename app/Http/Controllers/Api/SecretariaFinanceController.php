@@ -22,7 +22,6 @@ class SecretariaFinanceController extends Controller
             'solicitudInscripcion.estudiante:id,nombres,apellidos,cedula',
             'solicitudInscripcion.participanteExterno',
             'solicitudInscripcion.cursoAbierto.catalogo:id,nombre',
-            'inscripcionTaller.participanteExterno',
             'inscripcionTaller.taller:id,nombre',
         ]);
 
@@ -53,7 +52,6 @@ class SecretariaFinanceController extends Controller
             'solicitudInscripcion.estudiante:id,nombres,apellidos,cedula',
             'solicitudInscripcion.participanteExterno',
             'solicitudInscripcion.cursoAbierto.catalogo:id,nombre',
-            'inscripcionTaller.participanteExterno',
             'inscripcionTaller.taller:id,nombre',
         ])->findOrFail($id);
 

@@ -700,7 +700,10 @@ class EstudianteController extends Controller
         // Participante de taller
         $inscripcion = \App\Models\InscripcionTaller::find($id);
         if ($inscripcion) {
-            $inscripcion->delete();
+            DB::transaction(function () use ($inscripcion) {
+                CuentaPorCobrar::where('inscripcion_taller_id', $inscripcion->id)->delete();
+                $inscripcion->delete();
+            });
             return response()->json(['mensaje' => 'Participante de taller eliminado exitosamente.']);
         }
 

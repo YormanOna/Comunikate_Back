@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\InscripcionTaller;
 use App\Models\Taller;
 use App\Models\Persona;
+use App\Models\CuentaPorCobrar;
+use App\Models\TransaccionIngreso;
 use App\Models\ArchivoEliminado;
 use App\Services\StorageCleanupService;
 use Illuminate\Support\Facades\DB;
@@ -173,14 +175,63 @@ class InscripcionTallerController extends Controller
         ]);
     }
 
-    public function verificarPago(string $id): JsonResponse
+    public function verificarPago(Request $request, string $id): JsonResponse
     {
-        $inscripcion = InscripcionTaller::findOrFail($id);
-        $inscripcion->update(['pago_verificado' => !$inscripcion->pago_verificado]);
+        $inscripcion = InscripcionTaller::with('taller')->findOrFail($id);
+
+        DB::transaction(function () use ($inscripcion, $request) {
+            $updateData = [
+                'pago_verificado' => true,
+                'metodo_pago' => $request->metodo_pago ?? $inscripcion->metodo_pago,
+                'fecha_pago' => $request->fecha_pago ?? now()->toDateString(),
+            ];
+
+            if ($request->has('monto_pagado')) {
+                $updateData['monto_pagado'] = $request->monto_pagado;
+            }
+            if ($request->has('tipo_pago')) {
+                $updateData['tipo_pago'] = $request->tipo_pago;
+            }
+
+            $inscripcion->update($updateData);
+
+            $precioTotal = $request->filled('precio_ajustado')
+                ? $request->precio_ajustado
+                : ($inscripcion->taller->precio ?? 0);
+
+            $montoAbonado = $inscripcion->monto_pagado ?? 0;
+            $estado = $montoAbonado >= $precioTotal
+                ? CuentaPorCobrar::ESTADO_PAGADO
+                : ($montoAbonado > 0 ? CuentaPorCobrar::ESTADO_ABONADO : CuentaPorCobrar::ESTADO_PENDIENTE);
+
+            $cuenta = CuentaPorCobrar::updateOrCreate(
+                ['inscripcion_taller_id' => $inscripcion->id],
+                [
+                    'monto_total' => $precioTotal,
+                    'monto_abonado' => $montoAbonado,
+                    'estado' => $estado,
+                ]
+            );
+
+            // Registrar transacción en historial si el alumno pagó algo
+            if ($inscripcion->monto_pagado > 0) {
+                TransaccionIngreso::create([
+                    'cuenta_cobrar_id' => $cuenta->id,
+                    'monto' => $inscripcion->monto_pagado,
+                    'metodo_pago' => $inscripcion->metodo_pago,
+                    'fecha_pago' => $inscripcion->fecha_pago ?? now()->toDateString(),
+                    'comprobante_url' => $inscripcion->comprobante_url,
+                    'estado_verificacion' => 'aprobado',
+                    'registrado_por' => auth()->id(),
+                    'verificado_por' => auth()->id(),
+                    'fecha_verificacion' => now(),
+                ]);
+            }
+        });
 
         return response()->json([
-            'mensaje' => $inscripcion->pago_verificado ? 'Pago verificado' : 'Verificación de pago removida',
-            'pago_verificado' => $inscripcion->pago_verificado,
+            'mensaje' => 'Inscripción aprobada correctamente',
+            'pago_verificado' => true,
         ]);
     }
 
@@ -262,7 +313,11 @@ class InscripcionTallerController extends Controller
     {
         $inscripcion = InscripcionTaller::findOrFail($id);
         $eliminadoPor = auth()->id() ?? auth()->user()?->persona_id ?? null;
-        $inscripcion->delete();
+
+        DB::transaction(function () use ($inscripcion) {
+            CuentaPorCobrar::where('inscripcion_taller_id', $inscripcion->id)->delete();
+            $inscripcion->delete();
+        });
 
         app(StorageCleanupService::class)->deleteRecordFiles($inscripcion, $eliminadoPor);
 

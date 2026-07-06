@@ -42,7 +42,6 @@ class FinanceController extends Controller
             'solicitudInscripcion.estudiante',
             'solicitudInscripcion.participanteExterno',
             'solicitudInscripcion.cursoAbierto.catalogo',
-            'inscripcionTaller.participanteExterno',
             'inscripcionTaller.taller',
             'reservaPodcast.persona',
             'reservaPodcast.clienteExterno',
@@ -290,7 +289,6 @@ class FinanceController extends Controller
             'solicitudInscripcion.estudiante',
             'solicitudInscripcion.participanteExterno',
             'solicitudInscripcion.cursoAbierto.catalogo',
-            'inscripcionTaller.participanteExterno',
             'inscripcionTaller.taller',
         ])->findOrFail($id);
 
@@ -879,7 +877,6 @@ class FinanceController extends Controller
             'cuentaPorCobrar.matricula.estudiante',
             'cuentaPorCobrar.matricula.cursoAbierto.catalogo',
             'cuentaPorCobrar.inscripcionTaller.taller',
-            'cuentaPorCobrar.inscripcionTaller.participanteExterno',
             'cuentaPorCobrar.reservaPodcast.persona',
             'cuentaPorCobrar.reservaPodcast.clienteExterno',
             'cuentaPorCobrar.reservaPodcast.paquete',
@@ -977,7 +974,7 @@ class FinanceController extends Controller
             } elseif ($m->cuentaPorCobrar) {
                 $cp = $m->cuentaPorCobrar;
                 $estudiante = $cp->matricula?->estudiante
-                    ?? $cp->inscripcionTaller?->participanteExterno
+                    ?? $cp->inscripcionTaller
                     ?? $cp->reservaPodcast?->persona
                     ?? $cp->reservaPodcast?->clienteExterno
                     ?? $cp->reservaAula?->persona
@@ -1105,7 +1102,7 @@ class FinanceController extends Controller
             $moduloNombre = $t->lineaPagoModulo->modulo?->nombre_modulo;
         } elseif ($t->cuentaPorCobrar) {
             $estudiante = $t->cuentaPorCobrar->matricula?->estudiante
-                ?? $t->cuentaPorCobrar->inscripcionTaller?->participanteExterno;
+                ?? $t->cuentaPorCobrar->inscripcionTaller;
             $cursoNombre = $t->cuentaPorCobrar->matricula?->cursoAbierto?->catalogo?->nombre;
             $tallerNombre = $t->cuentaPorCobrar->inscripcionTaller?->taller?->nombre;
         }
@@ -1296,23 +1293,34 @@ class FinanceController extends Controller
 
         $participantes = [];
         $totalRecaudado = 0;
-        $totalEsperado = $taller->precio * $inscripciones->count();
+        $totalEsperado = 0;
 
         foreach ($inscripciones as $ins) {
+            $cuenta = CuentaPorCobrar::where('inscripcion_taller_id', $ins->id)->first();
+            $montoTotal = $cuenta?->monto_total ?? $taller->precio ?? 0;
+            $montoAbonado = $cuenta?->monto_abonado ?? ($ins->monto_pagado ?? $ins->precio_pagado ?? 0);
             $montoPagado = (float) ($ins->monto_pagado ?? $ins->precio_pagado ?? 0);
-            $totalRecaudado += $montoPagado;
+            $saldoPendiente = (float) $cuenta?->saldo_pendiente ?? max(0, $montoTotal - $montoAbonado);
+
+            $totalEsperado += $montoTotal;
+            $totalRecaudado += $montoAbonado;
 
             $participantes[] = [
                 'id' => $ins->id,
-                'nombre' => trim(($ins->nombres ?? '') . ' ' . ($ins->apellidos ?? '')),
+                'nombres' => $ins->nombres,
+                'apellidos' => $ins->apellidos,
+                'estudiante_nombre' => trim(($ins->nombres ?? '') . ' ' . ($ins->apellidos ?? '')),
                 'cedula' => $ins->cedula ?? '—',
                 'correo' => $ins->correo ?? '—',
                 'telefono' => $ins->telefono ?? '—',
                 'tipo_pago' => $ins->tipo_pago ?? 'completo',
                 'monto_pagado' => $montoPagado,
+                'monto_total' => $montoTotal,
+                'monto_abonado' => $montoAbonado,
+                'saldo_pendiente' => $saldoPendiente,
                 'precio_taller' => (float) ($taller->precio ?? 0),
                 'pago_verificado' => (bool) $ins->pago_verificado,
-                'esta_pagado_completo' => $montoPagado >= (float) ($taller->precio ?? 0),
+                'esta_pagado_completo' => $montoAbonado >= $montoTotal,
             ];
         }
 
@@ -1322,6 +1330,7 @@ class FinanceController extends Controller
                     'id' => $taller->id,
                     'nombre' => $taller->nombre,
                     'instructor' => $taller->instructor?->nombres . ' ' . $taller->instructor?->apellidos,
+                    'instructor_nombre' => $taller->instructor?->nombres . ' ' . $taller->instructor?->apellidos,
                     'fecha' => $taller->fecha?->format('Y-m-d'),
                     'precio' => (float) ($taller->precio ?? 0),
                     'modalidad' => $taller->modalidad,
@@ -1365,8 +1374,11 @@ class FinanceController extends Controller
             ->firstOrFail();
 
         $taller = \App\Models\Taller::findOrFail($tallerId);
+        $cuenta = CuentaPorCobrar::where('inscripcion_taller_id', $participanteId)->first();
+        $montoTotal = $cuenta?->monto_total ?? $taller->precio ?? 0;
+        $montoAbonado = $cuenta?->monto_abonado ?? ($inscripcion->monto_pagado ?? 0);
+        $saldo = (float) ($cuenta?->saldo_pendiente ?? max(0, $montoTotal - $montoAbonado));
 
-        // Buscar transacciones relacionadas (si existen)
         $transacciones = TransaccionIngreso::whereHas('cuentaPorCobrar', fn($q) => $q->where('inscripcion_taller_id', $participanteId))
             ->with(['cuentaPorCobrar', 'registrador'])
             ->orderBy('fecha_pago', 'desc')
@@ -1384,11 +1396,20 @@ class FinanceController extends Controller
         return response()->json([
             'datos' => [
                 'participante' => [
-                    'nombre' => trim(($inscripcion->nombres ?? '') . ' ' . ($inscripcion->apellidos ?? '')),
-                    'taller' => $taller->nombre,
-                    'precio_taller' => (float) ($taller->precio ?? 0),
-                    'monto_pagado' => (float) ($inscripcion->monto_pagado ?? $inscripcion->precio_pagado ?? 0),
+                    'id' => $inscripcion->id,
+                    'nombres' => $inscripcion->nombres,
+                    'apellidos' => $inscripcion->apellidos,
                 ],
+                'nombre_participante' => trim(($inscripcion->nombres ?? '') . ' ' . ($inscripcion->apellidos ?? '')),
+                'taller_nombre' => $taller->nombre,
+                'taller' => ['nombre' => $taller->nombre],
+                'precio_taller' => (float) ($taller->precio ?? 0),
+                'monto_total' => $montoTotal,
+                'monto_abonado' => $montoAbonado,
+                'total_pagado' => $montoAbonado,
+                'saldo' => $saldo,
+                'saldo_pendiente' => $saldo,
+                'cuenta_id' => $cuenta->id,
                 'transacciones' => $transacciones,
             ]
         ]);
@@ -1613,7 +1634,6 @@ class FinanceController extends Controller
             'cuentaPorCobrar.solicitudInscripcion.estudiante',
             'cuentaPorCobrar.solicitudInscripcion.participanteExterno',
             'cuentaPorCobrar.inscripcionTaller.taller',
-            'cuentaPorCobrar.inscripcionTaller.participanteExterno',
             'cuentaPorCobrar.reservaPodcast.persona',
             'cuentaPorCobrar.reservaPodcast.clienteExterno',
             'cuentaPorCobrar.reservaPodcast.paquete',
@@ -1740,7 +1760,7 @@ class FinanceController extends Controller
             $estudiante = $cp?->matricula?->estudiante
                 ?? $cp?->solicitudInscripcion?->estudiante
                 ?? $cp?->solicitudInscripcion?->participanteExterno
-                ?? $cp?->inscripcionTaller?->participanteExterno
+                ?? $cp?->inscripcionTaller
                 ?? $cp?->reservaPodcast?->persona
                 ?? $cp?->reservaPodcast?->clienteExterno
                 ?? $cp?->reservaAula?->persona
