@@ -14,7 +14,7 @@ class TransferirMatriculaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'curso_abierto_nuevo_id' => ['required', 'string', 'uuid', 'exists:academic.cursos_abiertos,id'],
+            'curso_abierto_nuevo_id' => ['required', 'string', 'uuid', 'exists:pgsql.academic.cursos_abiertos,id'],
             'motivo' => ['nullable', 'string', 'max:500'],
         ];
     }

@@ -16,7 +16,7 @@ class StoreTareaStaffRequest extends FormRequest
         return [
             'titulo' => 'required|string|max:200',
             'descripcion' => 'nullable|string',
-            'persona_id' => 'required|uuid|exists:people.personas,id',
+            'persona_id' => 'required|uuid|exists:pgsql.people.personas,id',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'estado' => 'in:pendiente,en_progreso,completada,cancelada',

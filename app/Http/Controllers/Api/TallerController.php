@@ -8,8 +8,10 @@ use App\Http\Requests\UpdateTallerRequest;
 use App\Models\Taller;
 use App\Services\InstructorConflictValidator;
 use Illuminate\Http\JsonResponse;
+
 use Illuminate\Http\Request;
 
+use Illuminate\Support\Facades\DB;
 class TallerController extends Controller
 {
     public function index(Request $request): JsonResponse
@@ -96,18 +98,23 @@ class TallerController extends Controller
             ], 409);
         }
 
-        $taller = Taller::create($data);
+        $taller = DB::transaction(function () use ($data, $horarios) {
+            $taller = Taller::create($data);
 
-        if (!empty($data['fecha_fin']) && !empty($horarios)) {
-            foreach ($horarios as $h) {
-                $taller->horarios()->create([
-                    'dia_semana' => $h['dia_semana'],
-                    'hora_inicio' => $h['hora_inicio'],
-                    'hora_fin' => $h['hora_fin'],
-                    'aula' => $h['aula'] ?? null,
-                ]);
+            if (!empty($data['fecha_fin']) && !empty($horarios)) {
+                foreach ($horarios as $h) {
+                    $taller->horarios()->create([
+                        'dia_semana' => $h['dia_semana'],
+                        'hora_inicio' => $h['hora_inicio'],
+                        'hora_fin' => $h['hora_fin'],
+                        'aula' => $h['aula'] ?? null,
+                        'capacidad' => $data['capacidad_maxima'] ?? 30,
+                    ]);
+                }
             }
-        }
+
+            return $taller;
+        });
 
         return response()->json(
             $taller->load(['instructor', 'ciudad', 'horarios']),
@@ -175,21 +182,24 @@ class TallerController extends Controller
             }
         }
 
-        $taller->update($data);
+        DB::transaction(function () use ($taller, $data, $horarios) {
+            $taller->update($data);
 
-        if (!is_null($horarios)) {
-            $taller->horarios()->delete();
-            foreach ($horarios as $h) {
-                $taller->horarios()->create([
-                    'dia_semana' => $h['dia_semana'],
-                    'hora_inicio' => $h['hora_inicio'],
-                    'hora_fin' => $h['hora_fin'],
-                    'aula' => $h['aula'] ?? null,
-                ]);
+            if (!is_null($horarios)) {
+                $taller->horarios()->delete();
+                foreach ($horarios as $h) {
+                    $taller->horarios()->create([
+                        'dia_semana' => $h['dia_semana'],
+                        'hora_inicio' => $h['hora_inicio'],
+                        'hora_fin' => $h['hora_fin'],
+                        'aula' => $h['aula'] ?? null,
+                        'capacidad' => $data['capacidad_maxima'] ?? $taller->capacidad_maxima ?? 30,
+                    ]);
+                }
             }
-        }
+        });
 
-        return response()->json($taller->load(['instructor', 'ciudad', 'horarios']));
+        return response()->json($taller->fresh(['instructor', 'ciudad', 'horarios']));
     }
 
     private function obtenerFechasRango(string $fechaInicio, ?string $fechaFin): array

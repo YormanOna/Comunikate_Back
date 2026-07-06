@@ -27,7 +27,6 @@ class TareaStaff extends Model
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
-        'created_by' => 'integer',
     ];
 
     public function persona(): BelongsTo

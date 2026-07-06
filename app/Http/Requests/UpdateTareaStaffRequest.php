@@ -16,7 +16,7 @@ class UpdateTareaStaffRequest extends FormRequest
         return [
             'titulo' => 'sometimes|string|max:200',
             'descripcion' => 'nullable|string',
-            'persona_id' => 'sometimes|uuid|exists:people.personas,id',
+            'persona_id' => 'sometimes|uuid|exists:pgsql.people.personas,id',
             'fecha_inicio' => 'sometimes|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'estado' => 'sometimes|in:pendiente,en_progreso,completada,cancelada',
