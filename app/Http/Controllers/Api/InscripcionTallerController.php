@@ -177,6 +177,7 @@ class InscripcionTallerController extends Controller
 
     public function verificarPago(Request $request, string $id): JsonResponse
     {
+        \Log::info('verificarPago ejecutado', ['id' => $id, 'data' => $request->all()]);
         $inscripcion = InscripcionTaller::with('taller')->findOrFail($id);
 
         DB::transaction(function () use ($inscripcion, $request) {
@@ -199,7 +200,12 @@ class InscripcionTallerController extends Controller
                 ? $request->precio_ajustado
                 : ($inscripcion->taller->precio ?? 0);
 
-            $montoAbonado = $inscripcion->monto_pagado ?? 0;
+            // Guardar el precio ajustado en la inscripción para que persista
+            if ($request->filled('precio_ajustado')) {
+                $inscripcion->update(['monto_pagado' => $precioTotal]);
+            }
+
+            $montoAbonado = $request->monto_pagado ?? $inscripcion->monto_pagado ?? 0;
             $estado = $montoAbonado >= $precioTotal
                 ? CuentaPorCobrar::ESTADO_PAGADO
                 : ($montoAbonado > 0 ? CuentaPorCobrar::ESTADO_ABONADO : CuentaPorCobrar::ESTADO_PENDIENTE);
@@ -213,17 +219,20 @@ class InscripcionTallerController extends Controller
                 ]
             );
 
-            // Registrar transacción en historial si el alumno pagó algo
-            if ($inscripcion->monto_pagado > 0) {
+            if ($request->monto_pagado > 0) {
+                $personaId = auth()->user()->persona_id ?? null;
+                if ($personaId && !Persona::where('id', $personaId)->exists()) {
+                    $personaId = null;
+                }
                 TransaccionIngreso::create([
                     'cuenta_cobrar_id' => $cuenta->id,
-                    'monto' => $inscripcion->monto_pagado,
+                    'monto' => $request->monto_pagado,
                     'metodo_pago' => $inscripcion->metodo_pago,
                     'fecha_pago' => $inscripcion->fecha_pago ?? now()->toDateString(),
                     'comprobante_url' => $inscripcion->comprobante_url,
                     'estado_verificacion' => 'aprobado',
-                    'registrado_por' => auth()->id(),
-                    'verificado_por' => auth()->id(),
+                    'registrado_por' => $personaId,
+                    'verificado_por' => $personaId,
                     'fecha_verificacion' => now(),
                 ]);
             }

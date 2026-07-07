@@ -723,16 +723,21 @@ class FinanceController extends Controller
                 return response()->json(['mensaje' => 'El monto ($' . $request->monto . ') supera el saldo pendiente ($' . $saldo . ')'], 422);
             }
 
+            $personaId = auth()->user()->persona_id ?? null;
+            if ($personaId && !\App\Models\Persona::where('id', $personaId)->exists()) {
+                $personaId = null;
+            }
+
             $transaccion = TransaccionIngreso::create([
                 'cuenta_cobrar_id' => $cuenta->id,
                 'monto' => $request->monto,
                 'metodo_pago' => $request->metodo_pago,
                 'comprobante_url' => $request->comprobante_url,
                 'fecha_pago' => $request->fecha_pago ?? now(),
-                'registrado_por' => auth()->user()->persona_id ?? null,
+                'registrado_por' => $personaId,
                 'observaciones' => $request->observaciones,
                 'estado_verificacion' => 'aprobado',
-                'verificado_por' => auth()->user()->persona_id ?? null,
+                'verificado_por' => $personaId,
                 'fecha_verificacion' => now(),
             ]);
 
@@ -851,11 +856,16 @@ class FinanceController extends Controller
             return response()->json(['mensaje' => 'Esta transacción ya ha sido verificada'], 422);
         }
 
+        $personaId = auth()->user()->persona_id ?? null;
+        if ($personaId && !\App\Models\Persona::where('id', $personaId)->exists()) {
+            $personaId = null;
+        }
+
         $transaccion->update([
             'estado_verificacion' => $request->estado,
             'motivo_rechazo' => $request->motivo_rechazo,
             'observaciones' => $request->observaciones ?? $transaccion->observaciones,
-            'verificado_por' => auth()->user()->persona_id ?? null,
+            'verificado_por' => $personaId,
             'fecha_verificacion' => now()
         ]);
 
@@ -1588,16 +1598,21 @@ class FinanceController extends Controller
                 return response()->json(['message' => "El monto (\${$request->monto}) supera el saldo pendiente (\${$saldo})"], 422);
             }
 
+            $personaId = auth()->user()->persona_id ?? null;
+            if ($personaId && !\App\Models\Persona::where('id', $personaId)->exists()) {
+                $personaId = null;
+            }
+
             $transaccion = TransaccionIngreso::create([
                 'cuenta_cobrar_id' => $cuenta->id,
                 'monto' => $request->monto,
                 'metodo_pago' => $request->metodo_pago,
                 'comprobante_url' => $request->comprobante_url,
                 'fecha_pago' => $request->fecha_pago ?? now(),
-                'registrado_por' => auth()->user()->persona_id ?? null,
+                'registrado_por' => $personaId,
                 'observaciones' => $request->observaciones,
                 'estado_verificacion' => 'aprobado',
-                'verificado_por' => auth()->user()->persona_id ?? null,
+                'verificado_por' => $personaId,
                 'fecha_verificacion' => now(),
             ]);
 
