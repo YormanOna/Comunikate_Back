@@ -54,10 +54,25 @@ class TallerController extends Controller
 
         if ($request->filled('tab')) {
             if ($request->tab === 'proximos') {
-                $query->where('fecha', '>=', now()->toDateString())
-                      ->whereIn('estado', ['pendiente', 'confirmado']);
+                $query->where(function ($q) {
+                    $q->where('fecha', '>=', now()->toDateString())
+                      ->orWhere('fecha_fin', '>=', now()->toDateString());
+                })->whereIn('estado', ['pendiente', 'confirmado']);
             } elseif ($request->tab === 'pasados') {
-                $query->where('fecha', '<', now()->toDateString());
+                $query->where(function ($q) {
+                    $q->where('fecha', '<', now()->toDateString())
+                      ->whereNull('fecha_fin')
+                      ->orWhere('fecha_fin', '<', now()->toDateString());
+                });
+            } elseif ($request->tab === 'hoy') {
+                $today = now()->toDateString();
+                $query->where(function ($q) use ($today) {
+                    $q->whereDate('fecha', '=', $today)
+                      ->orWhere(function ($inner) use ($today) {
+                          $inner->whereDate('fecha', '<=', $today)
+                                ->whereDate('fecha_fin', '>=', $today);
+                      });
+                });
             }
         }
 

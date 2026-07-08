@@ -227,6 +227,56 @@ class InstructorPortalController extends Controller
     }
 
     /**
+     * Obtener asistencias detalladas de una clase (por estudiante)
+     */
+    public function asistenciaClase($claseId): JsonResponse
+    {
+        $personaId = auth()->user()->persona_id;
+
+        $query = Clase::where('id', $claseId);
+
+        if (!$this->isAdmin()) {
+            $query->whereHas('modulo.cursoAbierto', fn($q) => $q->where('docente_id', $personaId));
+        }
+
+        $query->firstOrFail();
+
+        $asistencias = Asistencia::where('clase_id', $claseId)
+            ->with(['matricula.estudiante', 'matricula.solicitudInscripcion.participanteExterno'])
+            ->get()
+            ->map(function ($a) {
+                $persona = $a->matricula->estudiante;
+                $externo = $a->matricula->solicitudInscripcion?->participanteExterno;
+                return [
+                    'id' => $a->id,
+                    'clase_id' => $a->clase_id,
+                    'matricula_id' => $a->matricula_id,
+                    'asistio' => $a->asistio,
+                    'estado' => $a->estado,
+                    'observaciones' => $a->observaciones,
+                    'estudiante' => $persona ? [
+                        'id' => $persona->id,
+                        'nombres' => $persona->nombres,
+                        'apellidos' => $persona->apellidos,
+                        'cedula' => $persona->cedula,
+                        'correo' => $persona->correo,
+                        'ciudad' => $persona->ciudad?->nombre ?? null,
+                    ] : null,
+                    'participante_externo' => $externo ? [
+                        'id' => $externo->id,
+                        'nombres' => $externo->nombres,
+                        'apellidos' => $externo->apellidos ?? '',
+                        'cedula' => $externo->cedula,
+                        'correo' => $externo->correo,
+                        'telefono' => $externo->celular,
+                    ] : null,
+                ];
+            });
+
+        return response()->json(['datos' => $asistencias]);
+    }
+
+    /**
      * Registrar asistencia para una clase
      */
     public function registrarAsistencia(Request $request, $claseId): JsonResponse
@@ -239,6 +289,7 @@ class InstructorPortalController extends Controller
             'asistencias.*.asistio' => 'required|boolean',
             'asistencias.*.observaciones' => 'nullable|string',
             'asistencias.*.estado' => 'nullable|string|in:presente,ausente,tardanza,justificado',
+            'clase_observaciones' => 'nullable|string|max:500',
         ]);
 
         $claseQuery = Clase::where('id', $claseId);
@@ -247,7 +298,7 @@ class InstructorPortalController extends Controller
             $claseQuery->whereHas('modulo.cursoAbierto', fn($q) => $q->where('docente_id', $personaId));
         }
 
-        $claseQuery->firstOrFail();
+        $clase = $claseQuery->firstOrFail();
 
         DB::beginTransaction();
         try {
@@ -264,6 +315,11 @@ class InstructorPortalController extends Controller
                     ]
                 );
             }
+
+            if ($request->filled('clase_observaciones')) {
+                $clase->update(['observaciones' => $request->clase_observaciones]);
+            }
+
             DB::commit();
             return response()->json(['mensaje' => 'Asistencia registrada correctamente.']);
         } catch (\Exception $e) {

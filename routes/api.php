@@ -526,6 +526,7 @@ use Illuminate\Support\Facades\Route;
             Route::get('/', [AsistenciaTallerController::class, 'index'])->name('asistencias-talleres.index');
             Route::get('estadisticas', [AsistenciaTallerController::class, 'estadisticas'])->name('asistencias-talleres.estadisticas');
             Route::get('{id}', [AsistenciaTallerController::class, 'show'])->name('asistencias-talleres.show');
+            Route::get('{id}/estudiantes', [AsistenciaTallerController::class, 'listEstudiantes'])->name('asistencias-talleres.list-estudiantes');
             Route::put('{id}', [AsistenciaTallerController::class, 'update'])->name('asistencias-talleres.update');
             Route::delete('{id}', [AsistenciaTallerController::class, 'destroy'])->name('asistencias-talleres.destroy');
         });
@@ -614,6 +615,7 @@ Route::prefix('reports')->group(function () {
         Route::get('estudiantes/{id}', [InstructorPortalController::class, 'detalleEstudiante'])->name('instructor.detalle-estudiante');
         Route::get('modulos/{moduloId}/clases', [InstructorPortalController::class, 'clasesModulo'])->name('instructor.clases-modulo');
         Route::get('clases/{claseId}', [InstructorPortalController::class, 'detalleClase'])->name('instructor.detalle-clase');
+        Route::get('clases/{claseId}/asistencia', [InstructorPortalController::class, 'asistenciaClase'])->name('instructor.asistencia-clase');
         Route::post('clases/{claseId}/asistencia', [InstructorPortalController::class, 'registrarAsistencia'])->name('instructor.registrar-asistencia');
         Route::post('notas', [InstructorPortalController::class, 'registrarNotas'])->name('instructor.registrar-notas');
     });
@@ -677,8 +679,10 @@ Route::prefix('reports')->group(function () {
         Route::get('{taller_id}/inscripciones', [InscripcionTallerController::class, 'index']);
     });
 
-    Route::middleware(['auth:sanctum', 'role:Administrador|Instructor'])->prefix('academic/talleres/{taller_id}/asistencias')->group(function () {
+    Route::middleware(['auth:sanctum', 'role:Administrador|Secretaria|Instructor'])->prefix('academic/talleres/{taller_id}/asistencias')->group(function () {
+        Route::get('{id}/estudiantes', [AsistenciaTallerController::class, 'listEstudiantes']);
         Route::post('/', [AsistenciaTallerController::class, 'store']);
+        Route::post('{id}/estudiantes', [AsistenciaTallerController::class, 'storeEstudiantes']);
     });
 
     // ========================================================================

@@ -11,13 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::connection('pgsql')->table('academic.matriculas', function (Blueprint $table) {
-            $table->uuid('solicitud_inscripcion_id')->nullable();
-            
-            $table->foreign('solicitud_inscripcion_id')
-                ->references('id')
-                ->on('academic.solicitudes_inscripcion')
-                ->onDelete('set null');
+        $columns = collect(Schema::connection('pgsql')->getColumnListing('academic.matriculas'));
+
+        Schema::connection('pgsql')->table('academic.matriculas', function (Blueprint $table) use ($columns) {
+            if (!$columns->contains('solicitud_inscripcion_id')) {
+                $table->uuid('solicitud_inscripcion_id')->nullable();
+
+                $table->foreign('solicitud_inscripcion_id')
+                    ->references('id')
+                    ->on('academic.solicitudes_inscripcion')
+                    ->onDelete('set null');
+            }
         });
     }
 

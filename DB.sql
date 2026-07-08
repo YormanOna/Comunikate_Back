@@ -2212,7 +2212,9 @@ CREATE TABLE people.perfil_estudiante (
     direccion text,
     estado_civil character varying(20),
     edad integer,
-    ciudad character varying(100)
+    ciudad character varying(100),
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
 );
 
 

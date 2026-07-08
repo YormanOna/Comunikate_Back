@@ -16,9 +16,15 @@ class StoreAsistenciaTallerRequest extends FormRequest
         return [
             'taller_id' => ['required', 'uuid', 'exists:talleres,id'],
             'fecha_sesion' => ['required', 'date'],
-            'asistentes' => ['required', 'integer', 'min:0'],
-            'capacidad_registrada' => ['required', 'integer', 'min:1'],
+            'asistentes' => ['sometimes', 'integer', 'min:0'],
+            'capacidad_registrada' => ['sometimes', 'integer', 'min:1'],
             'observaciones' => ['nullable', 'string', 'max:1000'],
+            'estudiantes' => ['sometimes', 'array'],
+            'estudiantes.*.inscripcion_taller_id' => ['required_without:estudiantes.*.participante_externo_id', 'uuid', 'exists:inscripciones_taller,id'],
+            'estudiantes.*.participante_externo_id' => ['required_without:estudiantes.*.inscripcion_taller_id', 'uuid', 'exists:participantes_externos,id'],
+            'estudiantes.*.asistio' => ['required', 'boolean'],
+            'estudiantes.*.estado' => ['nullable', 'string', 'in:presente,ausente,tardanza,justificado'],
+            'estudiantes.*.observaciones' => ['nullable', 'string'],
         ];
     }
 
@@ -28,9 +34,7 @@ class StoreAsistenciaTallerRequest extends FormRequest
             'taller_id.required' => 'El taller es obligatorio',
             'taller_id.exists' => 'El taller no existe',
             'fecha_sesion.required' => 'La fecha de la sesión es obligatoria',
-            'asistentes.required' => 'El número de asistentes es obligatorio',
             'asistentes.min' => 'El número de asistentes no puede ser negativo',
-            'capacidad_registrada.required' => 'La capacidad registrada es obligatoria',
             'capacidad_registrada.min' => 'La capacidad debe ser mínimo 1',
         ];
     }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AsistenciaTaller extends Model
 {
@@ -27,13 +28,16 @@ class AsistenciaTaller extends Model
         'capacidad_registrada' => 'integer',
     ];
 
-    // Relations
     public function taller(): BelongsTo
     {
         return $this->belongsTo(Taller::class, 'taller_id');
     }
 
-    // Utility Methods
+    public function estudiantes(): HasMany
+    {
+        return $this->hasMany(AsistenciaTallerEstudiante::class, 'asistencia_taller_id');
+    }
+
     public function tasaAsistencia(): float
     {
         return $this->capacidad_registrada > 0 

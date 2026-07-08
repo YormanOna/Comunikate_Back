@@ -14,20 +14,15 @@ return new class extends Migration
         $connection = config('database.default');
         $columns = collect(Schema::connection($connection)->getColumnListing('academic.catalogo_cursos'));
 
-        Schema::connection($connection)->table('academic.catalogo_cursos', function (Blueprint $table) use ($columns) {
+        Schema::connection($connection)->table('academic.catalogo_cursos', function (Blueprint $table) use ($columns, $connection) {
             if (!$columns->contains('categoria')) {
                 $table->enum('categoria', ['regular', 'personalizado'])->default('regular');
             }
             if (!$columns->contains('requisitos_previos')) {
                 $table->text('requisitos_previos')->nullable()->after('descripcion');
             }
-            if (!$columns->contains('categoria_index')) {
-                // Evitar duplicar índices
-                try {
-                    $table->index('categoria');
-                } catch (\Exception $e) {
-                    // Índice ya existe, ignorar
-                }
+            if (!Schema::connection($connection)->hasIndex('academic.catalogo_cursos', 'academic_catalogo_cursos_categoria_index')) {
+                $table->index('categoria');
             }
         });
     }
