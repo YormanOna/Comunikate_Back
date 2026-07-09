@@ -10,6 +10,8 @@ class TarifaRadio extends Model
 {
     use HasFactory;
 
+    protected $connection = 'pgsql';
+
     protected $table = 'services.tarifas_radio';
 
     public $timestamps = false;

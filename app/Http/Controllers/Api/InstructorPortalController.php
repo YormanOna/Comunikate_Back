@@ -19,7 +19,7 @@ class InstructorPortalController extends Controller
 {
     private function isAdmin(): bool
     {
-        return auth()->user()->hasRole('Administrador');
+        return auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Secretaria');
     }
 
     /**

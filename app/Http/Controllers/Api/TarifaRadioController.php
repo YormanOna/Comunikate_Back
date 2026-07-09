@@ -21,7 +21,7 @@ class TarifaRadioController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:100|unique:services.tarifas_radio,nombre',
+            'nombre' => 'required|string|max:100|unique:tarifas_radio,nombre',
             'descripcion' => 'nullable|string',
             'precio_por_hora' => 'required|numeric|min:0',
             'incluye_operador' => 'boolean',
@@ -47,7 +47,7 @@ class TarifaRadioController extends Controller
         $tarifa = TarifaRadio::findOrFail((int) $id);
 
         $validated = $request->validate([
-            'nombre' => 'sometimes|string|max:100|unique:services.tarifas_radio,nombre,' . $id,
+            'nombre' => 'sometimes|string|max:100|unique:tarifas_radio,nombre,' . $id . ',id',
             'descripcion' => 'nullable|string',
             'precio_por_hora' => 'sometimes|numeric|min:0',
             'incluye_operador' => 'boolean',

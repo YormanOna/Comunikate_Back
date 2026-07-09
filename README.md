@@ -58,6 +58,8 @@ php artisan storage:link
 php artisan db:seed
 # No es necesario ya que la DB, tiene el schema completo
 php artisan db:seed
+
+php artisan serve --host=0.0.0.0 --port=8000
 ```
 
 ### B) Deploy de actualizaciones (datos existentes)

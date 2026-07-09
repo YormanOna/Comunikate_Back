@@ -696,7 +696,7 @@ class FinanceController extends Controller
             ];
         });
 
-        return response()->json(['datos' => $stats]);
+        return response()->json($stats);
     }
 
     public function registrarPago(Request $request): JsonResponse
@@ -1208,6 +1208,7 @@ class FinanceController extends Controller
                 ?? $matricula->solicitudInscripcion?->participanteExterno;
             $filasModulos = [];
             $totalPagadoEstudiante = 0;
+            $totalEsperadoEstudiante = 0;
 
             foreach ($modulos as $mod) {
                 $lp = $matricula->lineasPago->firstWhere('modulo_id', $mod->id);
@@ -1228,6 +1229,8 @@ class FinanceController extends Controller
                 ];
 
                 $totalPagadoEstudiante += $abonado;
+                $totalEsperadoEstudiante += $precio;
+                $totalEsperadoCatalogo += $precio;
             }
 
             $esExterno = $est && $est instanceof \App\Models\ClienteExterno;
@@ -1242,11 +1245,9 @@ class FinanceController extends Controller
                 'ciudad' => $est?->ciudad?->nombre ?? $est?->ciudad ?? '—',
                 'modulos' => $filasModulos,
                 'total_pagado' => $totalPagadoEstudiante,
+                'total_esperado' => $totalEsperadoEstudiante,
             ];
 
-            foreach ($modulos as $mod) {
-                $totalEsperadoCatalogo += (float) ($mod->precio_base ?? $curso->precio_base ?? 0);
-            }
             $totalRecaudadoReal += $totalPagadoEstudiante;
         }
 

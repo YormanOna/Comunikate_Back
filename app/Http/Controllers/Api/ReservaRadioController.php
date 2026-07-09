@@ -73,14 +73,14 @@ class ReservaRadioController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tarifa_id' => 'required|integer|exists:services.tarifas_radio,id',
-            'persona_id' => 'nullable|uuid|exists:people.personas,id',
-            'cliente_externo_id' => 'nullable|uuid|exists:people.clientes_externos,id',
+            'tarifa_id' => 'required|integer|exists:tarifas_radio,id',
+            'persona_id' => 'nullable|uuid|exists:personas,id',
+            'cliente_externo_id' => 'nullable|uuid|exists:clientes_externos,id',
             'fecha_reserva' => 'required|date',
             'hora_inicio' => 'required|date_format:H:i',
             'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
             'incluye_operador' => 'boolean',
-            'operador_id' => 'nullable|uuid|exists:people.personas,id',
+            'operador_id' => 'nullable|uuid|exists:personas,id',
             'observaciones' => 'nullable|string',
             'estado' => 'nullable|string|in:reservado,confirmado,en_progreso,completado,cancelado',
         ]);
@@ -175,14 +175,14 @@ class ReservaRadioController extends Controller
         $reserva = ReservaRadio::findOrFail($id);
 
         $validated = $request->validate([
-            'tarifa_id' => 'sometimes|integer|exists:services.tarifas_radio,id',
-            'persona_id' => 'nullable|uuid|exists:people.personas,id',
-            'cliente_externo_id' => 'nullable|uuid|exists:people.clientes_externos,id',
+            'tarifa_id' => 'sometimes|integer|exists:tarifas_radio,id',
+            'persona_id' => 'nullable|uuid|exists:personas,id',
+            'cliente_externo_id' => 'nullable|uuid|exists:clientes_externos,id',
             'fecha_reserva' => 'sometimes|date',
             'hora_inicio' => 'sometimes|date_format:H:i',
             'hora_fin' => 'sometimes|date_format:H:i|after:hora_inicio',
             'incluye_operador' => 'boolean',
-            'operador_id' => 'nullable|uuid|exists:people.personas,id',
+            'operador_id' => 'nullable|uuid|exists:personas,id',
             'observaciones' => 'nullable|string',
             'estado' => 'sometimes|string|in:reservado,confirmado,en_progreso,completado,cancelado',
         ]);
@@ -305,7 +305,7 @@ class ReservaRadioController extends Controller
         $reserva = ReservaRadio::findOrFail($id);
 
         $validated = $request->validate([
-            'operador_id' => 'nullable|uuid|exists:people.personas,id',
+            'operador_id' => 'nullable|uuid|exists:personas,id',
         ]);
 
         $operadorId = $validated['operador_id'];

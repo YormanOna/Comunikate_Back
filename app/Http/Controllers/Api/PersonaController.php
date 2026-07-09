@@ -103,9 +103,10 @@ class PersonaController extends Controller
         $query = Persona::with(['cuentaSistema', 'perfilInstructor', 'perfilStaff']);
 
         if ($request->has('tipo')) {
-            $query->where('tipo', $request->tipo);
+            $tipos = explode(',', $request->tipo);
+            $query->whereIn('tipo', $tipos);
         } else {
-            $query->whereIn('tipo', ['instructor', 'staff', 'secretaria', 'admin', 'pasante']);
+            $query->whereIn('tipo', ['instructor', 'staff', 'secretaria', 'admin', 'pasante', 'estudiante']);
         }
 
         if ($request->has('activos')) {
