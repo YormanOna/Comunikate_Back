@@ -263,7 +263,7 @@ class TallerController extends Controller
     {
         $request->validate([
             'ids' => 'required|array|min:1|max:1000',
-            'ids.*' => 'uuid|exists:academic.talleres,id',
+            'ids.*' => 'uuid|exists:pgsql.academic.talleres,id',
             'estado' => 'required|in:pendiente,confirmado,completado,cancelado',
         ]);
 

@@ -14,13 +14,13 @@ class StorePersonalizadoCursoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'catalogo_curso_id' => ['required', 'uuid', 'exists:academic.catalogo_cursos,id'],
+            'catalogo_curso_id' => ['required', 'uuid', 'exists:pgsql.academic.catalogo_cursos,id'],
             'nombre' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
             'fecha_inicio' => ['required', 'date', 'after_or_equal:today'],
             'fecha_fin' => ['required', 'date', 'after:fecha_inicio'],
             'capacidad' => ['required', 'integer', 'min:1', 'max:500'],
-            'instructor_id' => ['required', 'uuid', 'exists:core.users,id'],
+            'instructor_id' => ['required', 'uuid', 'exists:pgsql.core.users,id'],
             'dirigido_a' => ['nullable', 'string', 'max:500'],
             'requisitos_especiales' => ['nullable', 'string', 'max:500'],
             'certificado_emitido' => ['required', 'boolean'],

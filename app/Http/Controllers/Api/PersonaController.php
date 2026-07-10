@@ -28,7 +28,7 @@ class PersonaController extends Controller
     {
         $validated = validator($request->all(), [
             'tipo' => 'required|in:instructor,staff,secretaria,admin',
-            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('people.personas', 'cedula')->withoutTrashed()],
+            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('pgsql.people.personas', 'cedula')->withoutTrashed()],
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
             'correo' => 'nullable|email|max:150',

@@ -215,7 +215,7 @@ class CursoPersonalizadoController extends Controller
         $curso = CursoPersonalizado::findOrFail($id);
 
         $request->validate([
-            'participante_externo_id' => 'required|uuid|exists:academic.participantes_externos,id',
+            'participante_externo_id' => 'required|uuid|exists:pgsql.academic.participantes_externos,id',
             'estado' => 'required|in:inscrito,completado,retirado',
         ]);
 

@@ -18,13 +18,13 @@ class UpdatePersonaRequest extends FormRequest
 
         return [
             'tipo' => 'sometimes|in:instructor,staff,secretaria,admin',
-            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('people.personas', 'cedula')->ignore($personaId)->withoutTrashed()],
+            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('pgsql.people.personas', 'cedula')->ignore($personaId)->withoutTrashed()],
             'nombres' => 'sometimes|required|string|max:100',
             'apellidos' => 'sometimes|required|string|max:100',
             'correo' => 'nullable|email|max:150',
             'celular' => 'nullable|string|max:20',
             'ciudad' => 'nullable|string|max:100',
-            'ciudad_id' => 'nullable|integer|exists:core.ciudades,id',
+            'ciudad_id' => 'nullable|integer|exists:pgsql.core.ciudades,id',
             'es_activo' => 'boolean',
         ];
     }

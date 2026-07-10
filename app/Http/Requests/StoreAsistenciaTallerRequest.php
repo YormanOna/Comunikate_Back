@@ -14,14 +14,14 @@ class StoreAsistenciaTallerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'taller_id' => ['required', 'uuid', 'exists:academic.talleres,id'],
+            'taller_id' => ['required', 'uuid', 'exists:pgsql.academic.talleres,id'],
             'fecha_sesion' => ['required', 'date'],
             'asistentes' => ['sometimes', 'integer', 'min:0'],
             'capacidad_registrada' => ['sometimes', 'integer', 'min:1'],
             'observaciones' => ['nullable', 'string', 'max:1000'],
             'estudiantes' => ['sometimes', 'array'],
-            'estudiantes.*.inscripcion_taller_id' => ['required_without:estudiantes.*.participante_externo_id', 'uuid', 'exists:academic.inscripciones_taller,id'],
-            'estudiantes.*.participante_externo_id' => ['required_without:estudiantes.*.inscripcion_taller_id', 'uuid', 'exists:academic.participantes_externos,id'],
+            'estudiantes.*.inscripcion_taller_id' => ['required_without:estudiantes.*.participante_externo_id', 'uuid', 'exists:pgsql.academic.inscripciones_taller,id'],
+            'estudiantes.*.participante_externo_id' => ['required_without:estudiantes.*.inscripcion_taller_id', 'uuid', 'exists:pgsql.academic.participantes_externos,id'],
             'estudiantes.*.asistio' => ['required', 'boolean'],
             'estudiantes.*.estado' => ['nullable', 'string', 'in:presente,ausente,tardanza,justificado'],
             'estudiantes.*.observaciones' => ['nullable', 'string'],

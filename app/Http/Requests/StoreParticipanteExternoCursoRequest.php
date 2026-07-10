@@ -14,8 +14,8 @@ class StoreParticipanteExternoCursoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'curso_personalizado_id' => ['required', 'uuid', 'exists:academic.cursos_abiertos,id'],
-            'participante_externo_id' => ['required', 'uuid', 'exists:academic.participantes_externos,id'],
+            'curso_personalizado_id' => ['required', 'uuid', 'exists:pgsql.academic.cursos_abiertos,id'],
+            'participante_externo_id' => ['required', 'uuid', 'exists:pgsql.academic.participantes_externos,id'],
         ];
     }
 

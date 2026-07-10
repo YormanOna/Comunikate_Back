@@ -14,8 +14,8 @@ class StoreInscripcionTallerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'taller_id' => ['required', 'uuid', 'exists:academic.talleres,id'],
-            'estudiante_id' => ['required', 'uuid', 'exists:core.users,id'],
+            'taller_id' => ['required', 'uuid', 'exists:pgsql.academic.talleres,id'],
+            'estudiante_id' => ['required', 'uuid', 'exists:pgsql.core.users,id'],
         ];
     }
 

@@ -136,10 +136,10 @@ class MatriculaController extends Controller
     public function inscribirDesdePerfil(Request $request)
     {
         $request->validate([
-            'estudiante_id' => 'required|uuid|exists:people.personas,id',
-            'curso_abierto_id' => 'required|uuid|exists:academic.cursos_abiertos,id',
+            'estudiante_id' => 'required|uuid|exists:pgsql.people.personas,id',
+            'curso_abierto_id' => 'required|uuid|exists:pgsql.academic.cursos_abiertos,id',
             'pagos' => 'required|array|min:1',
-            'pagos.*.modulo_id' => 'required|uuid|exists:academic.modulos,id',
+            'pagos.*.modulo_id' => 'required|uuid|exists:pgsql.academic.modulos,id',
             'pagos.*.monto' => 'required|numeric|min:0.01',
             'pagos.*.monto_ajustado' => 'nullable|numeric|min:0',
             'pagos.*.motivo_ajuste' => 'nullable|string|max:255',

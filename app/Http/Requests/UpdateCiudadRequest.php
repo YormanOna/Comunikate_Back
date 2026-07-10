@@ -20,7 +20,7 @@ class UpdateCiudadRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre' => ['required', 'string', 'max:100', 'unique:core.ciudades,nombre,' . $this->route('id') . ',id'],
+            'nombre' => ['required', 'string', 'max:100', 'unique:pgsql.core.ciudades,nombre,' . $this->route('id') . ',id'],
         ];
     }
 

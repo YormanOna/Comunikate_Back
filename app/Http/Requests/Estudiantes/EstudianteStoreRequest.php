@@ -15,12 +15,12 @@ class EstudianteStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('people.personas', 'cedula')],
+            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('pgsql.people.personas', 'cedula')],
             'nombres' => ['required', 'string', 'max:100'],
             'apellidos' => ['required', 'string', 'max:100'],
             'correo' => ['nullable', 'email', 'max:150'],
             'celular' => ['nullable', 'string', 'max:20'],
-            'ciudad_id' => ['nullable', 'exists:core.ciudades,id'],
+            'ciudad_id' => ['nullable', 'exists:pgsql.core.ciudades,id'],
             'fecha_nacimiento' => ['nullable', 'date', 'before:today'],
             'notas_internas' => ['nullable', 'string'],
             'ocupacion' => ['nullable', 'string', 'max:100'],

@@ -81,7 +81,7 @@ class SecretariaFinanceController extends Controller
             'cuenta_cobrar_id' => [
                 'required',
                 'uuid',
-                Rule::exists('finance.cuentas_por_cobrar', 'id'),
+                Rule::exists('pgsql.finance.cuentas_por_cobrar', 'id'),
             ],
             'monto' => 'required|numeric|min:0.01',
             'metodo_pago' => 'required|string',

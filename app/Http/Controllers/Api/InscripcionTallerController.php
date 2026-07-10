@@ -288,7 +288,7 @@ class InscripcionTallerController extends Controller
             'metodo_pago' => 'nullable|string|max:50',
             'ciudad' => 'nullable|string|max:100',
             'fecha_pago' => 'nullable|date',
-            'taller_id' => 'nullable|uuid|exists:academic.talleres,id',
+            'taller_id' => 'nullable|uuid|exists:pgsql.academic.talleres,id',
         ]);
 
         $inscripcion = InscripcionTaller::findOrFail($id);
@@ -408,8 +408,8 @@ class InscripcionTallerController extends Controller
     public function inscribirDesdePerfil(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'estudiante_id' => 'required|uuid|exists:people.personas,id',
-            'taller_id' => 'required|uuid|exists:academic.talleres,id',
+            'estudiante_id' => 'required|uuid|exists:pgsql.people.personas,id',
+            'taller_id' => 'required|uuid|exists:pgsql.academic.talleres,id',
             'monto_pagado' => 'required|numeric|min:0',
             'metodo_pago' => 'nullable|string|max:50',
         ]);
