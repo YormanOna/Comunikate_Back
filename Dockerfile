@@ -6,7 +6,8 @@ RUN composer install \
     --no-dev \
     --no-interaction \
     --optimize-autoloader \
-    --no-scripts
+    --no-scripts \
+    --ignore-platform-reqs
 
 # Etapa 2: Assets frontend (Vite + Tailwind)
 FROM node:22-alpine AS assets
