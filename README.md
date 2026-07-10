@@ -105,3 +105,6 @@ php artisan view:cache
 | `Target class [...] does not exist` | Autoload desactualizado | `composer dump-autoload` |
 | `Connection refused` (BD) | PostgreSQL no corre | Verificar `systemctl status postgresql` |
 | Imágenes no se ven (404) | Falta symlink `public/storage` | `php artisan storage:link` |
+
+
+

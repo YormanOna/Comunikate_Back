@@ -566,7 +566,7 @@ class CertificadoController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        if (!Storage::disk('public')->exists($path)) {
+        if (!Storage::disk('s3')->exists($path)) {
             return response()->json([
                 'message' => 'El archivo PDF no se encuentra en el servidor',
             ], Response::HTTP_NOT_FOUND);
@@ -578,7 +578,7 @@ class CertificadoController extends Controller
         $catalogo = strtoupper(str_replace(' ', '_', $certificado->catalogoCurso->nombre ?? 'CERTIFICADO'));
         $filename = preg_replace('/[^A-Z0-9_]/', '', "{$nombres}_{$catalogo}") . '.pdf';
 
-        return Storage::disk('public')->download($path, $filename);
+        return Storage::disk('s3')->download($path, $filename);
     }
 
     public function historial(string $id): JsonResponse
