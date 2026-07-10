@@ -9,7 +9,7 @@ class EstudianteSegmento extends Model
 {
     use HasUuids;
 
-    protected $table = 'estudiante_segmentos';
+    protected $table = 'core.estudiante_segmentos';
     protected $connection = 'pgsql';
     public $timestamps = true;
 

@@ -17,12 +17,12 @@ class EstudianteUpdateRequest extends FormRequest
         $estudianteId = $this->route('estudiante');
 
         return [
-            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('personas', 'cedula')->ignore($estudianteId)],
+            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('people.personas', 'cedula')->ignore($estudianteId)],
             'nombres' => ['sometimes', 'string', 'max:100'],
             'apellidos' => ['sometimes', 'string', 'max:100'],
             'correo' => ['nullable', 'email', 'max:150'],
             'celular' => ['nullable', 'string', 'max:20'],
-            'ciudad_id' => ['nullable', 'exists:ciudades,id'],
+            'ciudad_id' => ['nullable', 'exists:core.ciudades,id'],
             'fecha_nacimiento' => ['nullable', 'date', 'before:today'],
             'notas_internas' => ['nullable', 'string'],
             'es_activo' => ['sometimes', 'boolean'],

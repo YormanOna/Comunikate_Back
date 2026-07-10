@@ -21,7 +21,7 @@ class StoreCiudadRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre' => ['required', 'string', 'max:100', Rule::unique('ciudades', 'nombre')->withoutTrashed()],
+            'nombre' => ['required', 'string', 'max:100', Rule::unique('core.ciudades', 'nombre')->withoutTrashed()],
         ];
     }
 

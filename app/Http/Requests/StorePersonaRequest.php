@@ -16,13 +16,13 @@ class StorePersonaRequest extends FormRequest
     {
         return [
             'tipo' => 'required|in:instructor,staff,secretaria,admin',
-            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('personas', 'cedula')->withoutTrashed()],
+            'cedula' => ['nullable', 'string', 'max:20', Rule::unique('people.personas', 'cedula')->withoutTrashed()],
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
             'correo' => 'nullable|email|max:150',
             'celular' => 'nullable|string|max:20',
             'ciudad' => 'nullable|string|max:100',
-            'ciudad_id' => 'nullable|integer|exists:ciudades,id',
+            'ciudad_id' => 'nullable|integer|exists:core.ciudades,id',
             'es_activo' => 'boolean',
         ];
     }

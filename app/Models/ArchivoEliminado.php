@@ -10,7 +10,7 @@ class ArchivoEliminado extends Model
 {
     use HasUuids;
 
-    protected $table = 'archivos_eliminados';
+    protected $table = 'core.archivos_eliminados';
     protected $connection = 'pgsql';
     public $timestamps = false;
 

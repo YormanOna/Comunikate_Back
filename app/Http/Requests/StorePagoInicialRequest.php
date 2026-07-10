@@ -17,12 +17,12 @@ class StorePagoInicialRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'matricula_id' => 'required|uuid|exists:pgsql.matriculas,id',
+            'matricula_id' => 'required|uuid|exists:pgsql.academic.matriculas,id',
             'pagos' => 'required|array|min:1',
             'pagos.*.linea_pago_modulo_id' => [
                 'required',
                 'uuid',
-                Rule::exists('pgsql.lineas_pago_modulo', 'id')
+                Rule::exists('pgsql.finance.lineas_pago_modulo', 'id')
                     ->where('matricula_id', $this->input('matricula_id')),
             ],
             'pagos.*.monto' => [

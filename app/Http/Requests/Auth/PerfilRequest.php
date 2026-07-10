@@ -19,7 +19,7 @@ class PerfilRequest extends FormRequest
             'apellidos' => ['sometimes', 'string', 'max:100'],
             'correo' => ['sometimes', 'email', 'max:150'],
             'celular' => ['sometimes', 'string', 'max:20'],
-            'cedula' => ['sometimes', 'string', 'max:20', Rule::unique('personas', 'cedula')->ignore($this->user()?->persona_id)],
+            'cedula' => ['sometimes', 'string', 'max:20', Rule::unique('people.personas', 'cedula')->ignore($this->user()?->persona_id)],
         ];
     }
 

@@ -16,7 +16,7 @@ class SyncMigrations extends Command
     public function handle(): int
     {
         $files = File::files(database_path('migrations'));
-        $ran = DB::table('migrations')->pluck('migration')->toArray();
+        $ran = DB::table('core.migrations')->pluck('migration')->toArray();
 
         $toMark = [];
 
@@ -64,9 +64,9 @@ class SyncMigrations extends Command
             return Command::SUCCESS;
         }
 
-        $maxBatch = (int) (DB::table('migrations')->max('batch') ?? 0) + 1;
+        $maxBatch = (int) (DB::table('core.migrations')->max('batch') ?? 0) + 1;
         foreach ($toMark as $name) {
-            DB::table('migrations')->insert([
+            DB::table('core.migrations')->insert([
                 'migration' => $name,
                 'batch' => $maxBatch,
             ]);

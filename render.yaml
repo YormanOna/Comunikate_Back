@@ -29,7 +29,7 @@ services:
       - key: DB_PASSWORD
         sync: false
       - key: DB_SEARCH_PATH
-        value: public
+        value: core,people,academic,services,finance,ops,audit,public
       - key: FILESYSTEM_DISK
         value: s3
       - key: AWS_ACCESS_KEY_ID

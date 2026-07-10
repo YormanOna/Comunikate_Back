@@ -14,7 +14,7 @@ class StoreHorarioTallerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'taller_id' => ['required', 'uuid', 'exists:talleres,id'],
+            'taller_id' => ['required', 'uuid', 'exists:academic.talleres,id'],
             'dia_semana' => ['required', 'integer', 'min:1', 'max:7'],
             'hora_inicio' => ['required', 'date_format:H:i:s'],
             'hora_fin' => ['required', 'date_format:H:i:s'],

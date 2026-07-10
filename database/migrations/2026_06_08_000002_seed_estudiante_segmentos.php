@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::table('estudiante_segmentos')->insert([
+        DB::table('core.estudiante_segmentos')->insert([
             [
                 'id' => Str::uuid()->toString(),
                 'nombre' => 'Deudores',
@@ -46,7 +46,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('estudiante_segmentos')->whereIn('nombre', [
+        DB::table('core.estudiante_segmentos')->whereIn('nombre', [
             'Deudores', 'Al dia', 'Alto Desempeno', 'Veteranos'
         ])->delete();
     }
